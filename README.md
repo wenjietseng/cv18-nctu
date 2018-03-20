@@ -7,6 +7,8 @@ Computer vision assignments
 	1. Image Pyramid
 	1. Colorizing the Russian Empire
 
+* References
+	* https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_tutorials.html
 
 ---
 git command intro
