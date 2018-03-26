@@ -10,9 +10,13 @@ Computer vision assignments
 For our group memeber
 * git command intro
 `git clone a_repository_link`
+
 `git pull`
+
 `git add some_files_your updated`
+
 `git commit -m "info about your updated"`
+
 `git push`
 
 * References
