@@ -1,5 +1,4 @@
 # Computer Vision 2018 spring semester nctu
-
 Computer vision assignments
 * Assignment 1
 	1. Hybrid Image
@@ -9,8 +8,7 @@ Computer vision assignments
 
 ---
 For our group memeber
-git command intro
-
+* git command intro
 `git clone a_repository_link`
 `git pull`
 `git add some_files_your updated`
