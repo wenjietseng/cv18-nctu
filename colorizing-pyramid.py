@@ -2,7 +2,9 @@ import numpy as np
 import sys
 import skimage as sk
 import skimage.io as skio
+import skimage.transform as sktr
 import time
+from scipy.signal import convolve2d as c2d
 
 def split_img(img):
     # convert to double (might want to do this later on to save memory)    
@@ -62,10 +64,15 @@ def auto_contrasting(img, contrast_factor=1.5):
 def main():
     # read in the image
     img = skio.imread(sys.argv[1])
-
+    height = img.shape[0] // 3
     img_split = split_img(img)
     for i in range(len(img_split)):
         img_split[i] = crop(img_split[i])
+
+    # for reconstruct
+    original_b = img_split[0]
+    original_g = img_split[1]
+    original_r = img_split[2]
 
     # unaligned result
     img_out = np.dstack([img_split[2], img_split[1], img_split[0]])
@@ -73,19 +80,63 @@ def main():
     fname = './russian-colorizing-output/test-unalign.jpg'
     skio.imsave(fname, img_out)
 
-    rad = 15
-    align_result = align_bgr(img_split[2], img_split[1], img_split[0], rad)
-    bg_result = align_result[0]
-    br_result = align_result[1]
-    print(bg_result, br_result)
+    # apply sobel operator
+    sobel_x = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+    sobel_y = sobel_x.T
 
-    ag = np.roll(img_split[1], bg_result[0], axis=0)
-    ag = np.roll(ag, bg_result[1], axis=1)
+    for i in range(len(img_split)):
+        img_split[i] = c2d(img_split[i], sobel_x)
+        img_split[i] = c2d(img_split[i], sobel_y)
 
-    ar = np.roll(img_split[2], br_result[0], axis=0)
-    ar = np.roll(ar, br_result[1], axis=1)
+    # pyramid speed up
+    factor_f = 2
+    factor_rad = 2
+    f = 20
+    rad = int((height // f) // 5)
+    total_row_shift_g, total_col_shift_g, total_row_shift_r, total_col_shift_r = 0, 0, 0, 0
 
-    img_out = np.dstack([ar, ag, img_split[0]])
+    while (f >= 1):
+        # down sample n dim image by local averaging
+        down_b = sktr.downscale_local_mean(img_split[0], (f, f))
+        down_g = sktr.downscale_local_mean(img_split[1], (f, f))
+        down_r = sktr.downscale_local_mean(img_split[2], (f, f))
+        print('down size: ', down_b.shape)
+
+        # compute similarity
+        similar_result = align_bgr(down_r, down_g, down_b, rad)
+        bg_result = similar_result[0]
+        br_result = similar_result[1]        
+
+        # rolling
+        total_row_shift_g += (bg_result[0] * f)
+        total_col_shift_g += (bg_result[1] * f)
+        total_row_shift_r += (br_result[0] * f)
+        total_col_shift_r += (br_result[1] * f)
+
+        img_split[1] = np.roll(img_split[1], bg_result[0] * f, axis=0)
+        img_split[1] = np.roll(img_split[1], bg_result[1] * f, axis=1)
+        img_split[2] = np.roll(img_split[2], br_result[0] * f, axis=0)
+        img_split[2] = np.roll(img_split[2], br_result[1] * f, axis=1)
+
+        # update factors
+        f = f // factor_f
+        rad = rad // factor_rad
+        # print('total_row_shift_g, total_col_shift_g: ', total_row_shift_g, ', ', total_col_shift_g)
+        # print('total_row_shift_r, total_col_shift_r: ', total_row_shift_r, ', ', total_col_shift_r)       
+
+    print('total_row_shift_g, total_col_shift_g: ', total_row_shift_g, ', ', total_col_shift_g)
+    print('total_row_shift_r, total_col_shift_r: ', total_row_shift_r, ', ', total_col_shift_r)       
+    # align_result = align_bgr(img_split[2], img_split[1], img_split[0], rad)
+    # bg_result = align_result[0]
+    # br_result = align_result[1]
+    # print(bg_result, br_result)
+
+    original_g = np.roll(original_g, total_row_shift_g, axis=0)
+    original_g = np.roll(original_g, total_col_shift_g, axis=1)
+    original_r = np.roll(original_r, total_row_shift_r, axis=0)
+    original_r = np.roll(original_r, total_col_shift_r, axis=1)
+
+    img_out = np.dstack([original_r, original_g, original_b])
     img_out = auto_contrasting(img_out)
 
     # save the alinged image
