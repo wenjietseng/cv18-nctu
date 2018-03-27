@@ -4,7 +4,8 @@ Computer vision assignments
 	* Libraries: cv2, numpy, skimage
 	* Hybrid Image: `python hybrid-image.py /path-to-img1/img1 /path-to-img2/img2`
 	* Image Pyramid: `python pyramid-FFT.py /path-to-img/img`
-	* Colorizing the Russian Empire: `python colorizing-pyramid.py /path-to-img/img`
+	* Colorizing the Russian Empire: `python colorizing-naive.py /path-to-img/jpg-img`
+	`python colorizing-pyramid.py /path-to-img/tif-img`
 ---
 For our group memebers
 * git command intro
