@@ -1,13 +1,12 @@
 # Computer Vision 2018 spring semester nctu
 Computer vision assignments
 * Assignment 1
-	1. Hybrid Image
-	1. Image Pyramid
-	1. Colorizing the Russian Empire
-	code usage:
-
+	* Libraries: cv2, numpy, skimage
+	* Hybrid Image: `python hybrid-image.py /path-to-img1/img1 /path-to-img2/img2`
+	* Image Pyramid: `python pyramid-FFT.py /path-to-img/img`
+	* Colorizing the Russian Empire: `python colorizing-pyramid.py /path-to-img/img`
 ---
-For our group memeber
+For our group memebers
 * git command intro
 `git clone a_repository_link`
 
