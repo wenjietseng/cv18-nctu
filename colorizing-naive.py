@@ -68,10 +68,10 @@ def main():
         img_split[i] = crop(img_split[i])
 
     # unaligned result
-    img_out = np.dstack([img_split[2], img_split[1], img_split[0]])
+    # img_out = np.dstack([img_split[2], img_split[1], img_split[0]])
     # save the image
-    fname = './russian-colorizing-output/test-unalign.jpg'
-    skio.imsave(fname, img_out)
+    # fname = './russian-colorizing-output/test-unalign.jpg'
+    # skio.imsave(fname, img_out)
 
     rad = 15
     align_result = align_bgr(img_split[2], img_split[1], img_split[0], rad)

@@ -75,10 +75,10 @@ def main():
     original_r = img_split[2]
 
     # unaligned result
-    img_out = np.dstack([img_split[2], img_split[1], img_split[0]])
+    # img_out = np.dstack([img_split[2], img_split[1], img_split[0]])
     # save the image
-    fname = './russian-colorizing-output/test-unalign.jpg'
-    skio.imsave(fname, img_out)
+    # fname = './russian-colorizing-output/test-unalign.jpg'
+    # skio.imsave(fname, img_out)
 
     # apply sobel operator
     sobel_x = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
