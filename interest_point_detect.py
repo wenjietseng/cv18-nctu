@@ -10,7 +10,7 @@ class interest_point_detection(object):
         self.read_image()
         # self.show_img()
     
-        self.detect_interest_points()
+        self.kp_features_sift()
         # self.show_img()
         self.write_img()
     
@@ -20,10 +20,14 @@ class interest_point_detection(object):
         self.img = cv2.imread(self.img_path)
         self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
 
-    def detect_interest_points(self):
+    def kp_features_sift(self):
         self.sift = cv2.xfeatures2d.SIFT_create()
         self.interest_point, self.descriptors = self.sift.detectAndCompute(self.img_gray, None)
         self.img = cv2.drawKeypoints(self.img_gray, self.interest_point, self.img)
+
+    # def kp_features_mser(self):
+        # self.mser = cv2.MSER_create()
+
 
     def show_img(self):
         cv2.imshow('image', self.img)
