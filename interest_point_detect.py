@@ -1,47 +1,43 @@
 import cv2, sys
 import numpy as np
-# from matplotlib import pyplot as plt
-# from PIL import Image
+from matplotlib import pyplot as plt
 
-class interest_point_detection(object):
+class interest_point_detect(object):
     def __init__(self, img_path):
         self.img_path = img_path
-
         self.read_image()
-        # self.show_img()
-    
+        self.show_img(self.img)
+        self.show_img(self.img_gray)
         self.kp_features_sift()
-        # self.show_img()
+        self.show_img(self.img)
+        self.show_img(self.img_gray)
         self.write_img()
     
     def read_image(self):
-        # read image and turn it into gray scale, consider 3 color channels?
-        # with cv2.imread(self.img_path) as img:
         self.img = cv2.imread(self.img_path)
-        self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        if self.img is None:
+            print('Invalid image:' + self.img_path)
+        else:
+            print('Image successfully read ...')
+        self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY) # or specify 0 in imread
 
     def kp_features_sift(self):
+        """ 
+        We use gray scale to compute
+        kp: key points or interest points
+        des: descriptors
+        """
         self.sift = cv2.xfeatures2d.SIFT_create()
-        self.interest_point, self.descriptors = self.sift.detectAndCompute(self.img_gray, None)
-        self.img = cv2.drawKeypoints(self.img_gray, self.interest_point, self.img)
+        self.kp, self.des = self.sift.detectAndCompute(self.img_gray, None)
+        self.img_gray = cv2.drawKeypoints(self.img, self.kp, self.img_gray)
 
-    # def kp_features_mser(self):
-        # self.mser = cv2.MSER_create()
+    def kp_features_mser(self):
+        pass
 
-
-    def show_img(self):
-        cv2.imshow('image', self.img)
+    def show_img(self, img):
+        cv2.imshow('image', img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
     def write_img(self):
         cv2.imwrite('out.jpg', self.img)
-
-
-
-if __name__ == "__main__":
-    fname = sys.argv[1]
-    interest_point_detection(fname)
-# img=cv2.drawKeypoints(gray,kp,img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-# cv2.imwrite('sift_keypoints.jpg',img)
-# kp, des = sift.detectAndCompute(gray,None)
