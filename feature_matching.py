@@ -2,44 +2,75 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-
 class feature_matching(object):
-    pass
+    def __init__(self, kp1, kp2, des1, des2, img1, img2):
+        self.kp1 = kp1
+        self.kp2 = kp2
+        self.des1 = des1
+        self.des2 = des2
+        self.img1 = img1
+        self.img2 = img2
+        self.match_features()
+        self.write_img(self.match_img)
 
-img1 = cv2.imread('img1.png',0)          # queryImage
-img2 = cv2.imread('img4.png',0)          # trainImage
+    def match_features(self):
+        # Match features from keypoints, descriptors, and images
+        print("Matching Features...")
+        # maybe matcher and match should be implemented by ourself
+        matcher = cv2.BFMatcher(cv2.NORM_L2, True)
+        self.matches = matcher.match(self.des1, self.des2)
+        # self.match_img = self.draw_matches(self.img1, self.kp1, self.img2, self.kp2, self.matches)
+        self.match_img = cv2.drawMatches(self.img1, self.kp1, self.img2, self.kp2, self.matches, None)
 
-# Initiate SIFT detector
-# orb = cv2.ORB()
-sift = cv2.xfeatures2d.SIFT_create()
-# find the keypoints and descriptors with SIFT
-kp1, des1 = sift.detectAndCompute(img1,None)
-kp2, des2 = sift.detectAndCompute(img2,None)
+    def write_img(self, img):
+        cv2.imwrite('out-feature_matching.png', img)
 
-# print(type(kp1), type(des1), type(kp2), type(des2))
-# print(kp1[0].angle)
-# print(kp1[0].class_id)
-# print(kp1[0].octave)
-# print(kp1[0].pt)
-# print(kp1[0].response)
-# print(kp1[0].size)
+    def draw_matches(self, img1, kp1, img2, kp2, matches, inliers = None):
+        # Create a new output image that concatenates the two images together
+        rows1 = self.img1.shape[0]
+        cols1 = self.img1.shape[1]
+        rows2 = self.img2.shape[0]
+        cols2 = self.img2.shape[1]
 
-# create BFMatcher object
-bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+        out = np.zeros((max([rows1,rows2]), cols1 + cols2, 3), dtype='uint8')
 
-# Match descriptors.
-print(img1.shape, img2.shape)
+        # Place the first image to the left
+        out[:rows1,:cols1,:] = np.dstack([img1])
 
-matches = bf.match(des1,des2)
-# print(matches)
-# Sort them in the order of their distance.
-matches = sorted(matches, key = lambda x:x.distance)
+        # Place the next image to the right of it
+        out[:rows2,cols1:cols1+cols2,:] = np.dstack([img2])
 
-# Draw first 10 matches.
-img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches, None, flags=2)
+        # For each pair of points we have between both images
+        # draw circles, then connect a line between them
+        for mat in matches:
 
-plt.imshow(img3)
-plt.show()
+            # Get the matching keypoints for each of the images
+            img1_idx = mat.queryIdx
+            img2_idx = mat.trainIdx
 
+            # x - columns, y - rows
+            (x1,y1) = kp1[img1_idx].pt
+            (x2,y2) = kp2[img2_idx].pt
 
-# Brute-Force Matching with SIFT Descriptors and Ratio test
+            inlier = False
+
+            if inliers is not None:
+                for i in inliers:
+                    if i.item(0) == x1 and i.item(1) == y1 and i.item(2) == x2 and i.item(3) == y2:
+                        inlier = True
+
+            # Draw a small circle at both co-ordinates
+            cv2.circle(out, (int(x1),int(y1)), 4, (255, 0, 0), 1)
+            cv2.circle(out, (int(x2)+cols1,int(y2)), 4, (255, 0, 0), 1)
+
+            # Draw a line in between the two points, draw inliers if we have them
+            if inliers is not None and inlier:
+                cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (0, 255, 0), 1)
+            elif inliers is not None:
+                cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (0, 0, 255), 1)
+
+            if inliers is None:
+                cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0), 1)
+
+        return out
+
