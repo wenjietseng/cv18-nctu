@@ -3,21 +3,24 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sys
 
-from interest_point_detect import interest_point_detect
-from feature_matching import feature_matching
-from homography import homography
-from panoramic_image_stiching import image_stiching
+from feature_match import matcher
+from pano_stich import image_stiching
 
 # main script
+fname1 = './photoSource/IMG_0023.JPG'
+fname2 = './photoSource/IMG_0024.JPG'
 
-fname1= './photoSource/out-final-0.png'
-# fname1 = './photoSource/IMG_0023.JPG'
-fname2 = './photoSource/IMG_0025.JPG'
-# fname1 = 'img1.png'
-# fname2 = 'img4.png'
+f_match = matcher(fname1, fname2)
+print('--- img size ---')
+print(f_match.img1.shape, f_match.img2.shape)
+print('--- matches ---')
+print(f_match.matches, len(f_match.matches))
+print('--- len of kps ---')
+print(len(f_match.kp1), len(f_match.kp2))
+print('--- size of descriptors ---')
+print(f_match.des1.shape, f_match.des2.shape)
+print('--- descriptors ---')
+print(f_match.des1, f_match.des2)
 
-img_a = interest_point_detect(fname1)
-img_b = interest_point_detect(fname2)
-f_matches = feature_matching(img_a.kp, img_b.kp, img_a.des, img_b.des, img_a.img_gray, img_b.img_gray)
-stich = image_stiching(img_a.img, img_b.img, f_matches.M)
-cv2.imwrite('out-final.png', stich.result_img)
+# stich = image_stiching(img_a.img, img_b.img, f_matches.M)
+# cv2.imwrite('out-final.png', stich.result_img)
