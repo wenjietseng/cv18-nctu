@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import sys
 
 from feature_match import matcher
+from homography_ransac import homography
 from pano_stich import image_stiching
 
 # main script
@@ -21,6 +22,9 @@ print('--- size of descriptors ---')
 print(f_match.des1.shape, f_match.des2.shape)
 print('--- descriptors ---')
 print(f_match.des1, f_match.des2)
+
+homography(f_match.matches, f_match.kp1, f_match.kp2)
+
 
 # stich = image_stiching(img_a.img, img_b.img, f_matches.M)
 # cv2.imwrite('out-final.png', stich.result_img)

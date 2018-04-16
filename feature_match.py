@@ -20,10 +20,10 @@ class matcher(object):
         (self.kp1, self.des1, self.kp2, self.des2) = self.SIFTFeatureExtractor(self.img1, self.img2, self.numberOfImage)
         
         # Match the features
-        self.matches = self.featureMatching(self.des1, self.des2)
+        self.matches, self.matches_for_draw = self.featureMatching(self.des1, self.des2)
 
         # Draw matches and save
-        img_final = cv2.drawMatchesKnn(self.img1, self.kp1, self.img2, self.kp2, self.matches, None, flags = 2)
+        img_final = cv2.drawMatchesKnn(self.img1, self.kp1, self.img2, self.kp2, self.matches_for_draw, None, flags = 2)
         cv2.imwrite("final.png", img_final)
 
     
@@ -69,12 +69,12 @@ class matcher(object):
 
         # Create an array for final result
         matches = []
-
+        matches_for_draw = []
         # David Lowe's ratio test; ratio is recommended to set between 0.7 and 0.8
         testRatio = 0.7
-        for currentMatch in rawMatches:
-            if len(currentMatch) == 2 and currentMatch[0].distance < currentMatch[1].distance * testRatio:
-                matches.append([currentMatch[0]])
-
+        for m, n in rawMatches:
+            if m.distance < n.distance * testRatio:
+                matches.append(m)
+                matches_for_draw.append([m])
         # Return the matches left after the test
-        return matches
+        return matches, matches_for_draw
