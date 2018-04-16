@@ -3,27 +3,28 @@ import sys
 import numpy as np
 
 class matcher(object):
-    def __init__(self, img_path1, img_path2):
-        self.img1 = cv2.imread(img_path1, cv2.IMREAD_GRAYSCALE)
-        self.img2 = cv2.imread(img_path2, cv2.IMREAD_GRAYSCALE) 
-        
+    def __init__(self, img1, img2):
+        # self.img1 = cv2.imread(img_path1)
+        # self.img2 = cv2.imread(img_path2) 
+        self.img1, self.img2 = img1, img2
         # a simple resize to avoid image grow too big
         h1, w1 = self.img1.shape[:2]
         self.img1 = cv2.resize(self.img1, (int(1/8*w1), int(1/8*h1)), interpolation=cv2.INTER_CUBIC)
+        self.img1_gray = cv2.cvtColor(self.img1, cv2.COLOR_BGR2GRAY)
         h2, w2 = self.img2.shape[:2]
         self.img2 = cv2.resize(self.img2, (int(1/8*w2), int(1/8*h2)), interpolation=cv2.INTER_CUBIC) 
-        
+        self.img2_gray = cv2.cvtColor(self.img2, cv2.COLOR_BGR2GRAY) 
         # Set parameters
         self.numberOfImage = 0
 
         # Extract feature using SIFT
-        (self.kp1, self.des1, self.kp2, self.des2) = self.SIFTFeatureExtractor(self.img1, self.img2, self.numberOfImage)
+        (self.kp1, self.des1, self.kp2, self.des2) = self.SIFTFeatureExtractor(self.img1_gray, self.img2_gray, self.numberOfImage)
         
         # Match the features
         self.matches, self.matches_for_draw = self.featureMatching(self.des1, self.des2)
 
         # Draw matches and save
-        img_final = cv2.drawMatchesKnn(self.img1, self.kp1, self.img2, self.kp2, self.matches_for_draw, None, flags = 2)
+        img_final = cv2.drawMatchesKnn(self.img1_gray, self.kp1, self.img2_gray, self.kp2, self.matches_for_draw, None, flags = 2)
         cv2.imwrite("final.png", img_final)
 
     

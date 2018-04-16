@@ -8,6 +8,8 @@ from scipy import ndimage
 from scipy.special import *
 from random import choice
 from PIL import Image
+import warnings
+warnings.filterwarnings(action="ignore", module="scipy", message="^internal gelsd")
 
 class homography(object):
     def __init__(self, good_matches, kp1, kp2, img1):
@@ -16,7 +18,7 @@ class homography(object):
             self.rows, self.cols = img1.shape
         else:
             self.rows, self.cols, _ = img1.shape
-        self.homomat()
+        self.H = self.homomat()
 
 
     def homomat(self):
@@ -26,17 +28,18 @@ class homography(object):
             .reshape(-1, 1, 2)
         
         plist = np.hstack((dst_pts, src_pts))
-        print(plist)
+        H = self.ransac(plist)
+        return H
 
-    def ransac(self, plist, iters=100, error=10, good_model_num=5):
+    def ransac(self, plist, iters=100, error=350, good_model_num=10):
         model_error = 255
         model_H = None
         for i in range(iters):
             consensus_set = []
             point_list_tmp = np.copy(plist).tolist()
-            # random select 4 points
-            for j in range(4):
-                temp = np.choice(point_list_tmp)
+            # random select 3 points
+            for j in range(3):
+                temp = choice(point_list_tmp)
                 consensus_set.append(temp)
                 point_list_tmp.remove(temp)
             fp0, fp1, fp2 = [], [], []
@@ -44,13 +47,14 @@ class homography(object):
             for line in consensus_set:
                 fp0.append(line[0][0])
                 fp1.append(line[0][1])
-                fp2.append(line[1])
+                fp2.append(1)
 
                 tp0.append(line[0][0])
                 tp1.append(line[0][1])
                 tp2.append(1)
-            fp = np.array([fp0, fp1, fp2])
-            tp = np.array([tp0, tp1, tp2])
+            
+            fp = np.array([fp0, fp1, fp2], dtype=float)
+            tp = np.array([tp0, tp1, tp2], dtype=float)
 
             H = self.Haffine_from_points(fp, tp)
             
