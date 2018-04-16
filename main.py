@@ -10,8 +10,9 @@ from panoramic_image_stiching import image_stiching
 
 # main script
 
-fname1 = 'IMG_4477.JPG'
-fname2 = 'IMG_4479.JPG'
+fname1= './photoSource/out-final-0.png'
+# fname1 = './photoSource/IMG_0023.JPG'
+fname2 = './photoSource/IMG_0025.JPG'
 # fname1 = 'img1.png'
 # fname2 = 'img4.png'
 
