@@ -2,25 +2,6 @@ import numpy as np
 import cv2
 import sys
 
-# FAST keypoint detection
-def fastKPDetection(img, numberOfImage):
-
-    # Create a fast detector for keypoint detection
-    detector = cv2.cv2.FastFeatureDetector_create()
-
-    # Detect keypoint
-    keyPointData = detector.detect(img)
-    result = cv2.cv2.drawKeypoints(img, keyPointData, outImage = np.array([]), color=(255,0 ,0))
-
-    # Save the keypoint image
-    cv2.cv2.imwrite("test_" + str(numberOfImage) + ".png", result)
-
-    # Print out the number of keypoints
-    print("# of keypoints: {}".format(len(keyPointData)))
-
-    # return the keypoint
-    return keyPointData
-
 # SIFT feature extractor, root SIFT included to enable more precise result
 def SIFTFeatureExtractor(masterImg, slaveImg, numberOfImage):
 
@@ -95,29 +76,3 @@ def main():
     cv2.cv2.imwrite("final.png", img_final)
 
 main()
-# import numpy as np
-# import cv2
-
-# img1 = cv2.imread("box.png",0)          # queryImage
-# img2 = cv2.imread("box_in_scene.png",0) # trainImage
-
-# # Initiate SIFT detector
-
-# sift = cv2.xfeatures2d.SIFT_create()
-# # find the keypoints and descriptors with SIFT
-# kp1, des1 = sift.detectAndCompute(img1,None)
-# kp2, des2 = sift.detectAndCompute(img2,None)
-
-# # BFMatcher with default params
-# bf = cv2.BFMatcher()
-# matches = bf.knnMatch(des1,des2, k=2)
-
-# # Apply ratio test
-# good = []
-# for m,n in matches:
-#     if m.distance < 0.75*n.distance:
-#         good.append([m])
-
-# # cv2.drawMatchesKnn expects list of lists as matches.
-# img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,None, flags=2)
-# cv2.cv2.imwrite("final.png", img3)
