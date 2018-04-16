@@ -2,10 +2,20 @@ import numpy as np
 import cv2
 import sys
 import math, skimage.io as io, matplotlib.pyplot as plt
+from scipy import *
+from scipy import linalg
+from scipy import ndimage
+from scipy.special import *
+from random import choice
+from PIL import Image
 
 class homography(object):
-    def __init__(self, good_matches, kp1, kp2):
+    def __init__(self, good_matches, kp1, kp2, img1):
         self.good_matches, self.kp1, self.kp2 = good_matches, kp1, kp2
+        if np.ndim(img1) == 2:
+            self.rows, self.cols = img1.shape
+        else:
+            self.rows, self.cols, _ = img1.shape
         self.homomat()
 
 
@@ -14,29 +24,116 @@ class homography(object):
             .reshape(-1, 1, 2)
         dst_pts = np.float32([self.kp2[m.trainIdx].pt for m in self.good_matches])\
             .reshape(-1, 1, 2)
-        print(src_pts)
-        print(np.reshape(src_pts, (lensrc)))
-        print(np.hstack([dst_pts, src_pts]).shape)
-
-
-    # RANSAC algorithm to get best matching pair
-    def ransac(self, data, tolerance=0.5, max1=100, confidence=0.95):
-        count, bm, bc, bi = 0, None, 0, None
-        while count < max1:
-            tempd, temps = np.matrix(np.copy(data)), np.copy(data)
-            np.random.shuffle(temps) # Gets a random set of points based on RANSAC
-            temps = np.matrix(temps)[0:4]
-            homography = getHomography(temps[:,0:2], temps[:,2:])
-            error = np.sqrt((np.array(np.array(homogeneous((homography * homogeneous(tempd[:,0:2].transpose())))[0:2,:]) - tempd[:,2:].transpose()) ** 2).sum(0))
-            if (error < tolerance).sum() > bc:
-                bm, bc, bi = homography, (error < tolerance).sum(), np.argwhere(error < tolerance)
-                p = float(bc) / data.shape[0]
-                max1 = math.log(1-confidence)/math.log(1-(p**4))
-            count += 1
-        return bm, bi
-
         
+        plist = np.hstack((dst_pts, src_pts))
+        print(plist)
 
+    def ransac(self, plist, iters=100, error=10, good_model_num=5):
+        model_error = 255
+        model_H = None
+        for i in range(iters):
+            consensus_set = []
+            point_list_tmp = np.copy(plist).tolist()
+            # random select 4 points
+            for j in range(4):
+                temp = np.choice(point_list_tmp)
+                consensus_set.append(temp)
+                point_list_tmp.remove(temp)
+            fp0, fp1, fp2 = [], [], []
+            tp0, tp1, tp2 = [], [], []
+            for line in consensus_set:
+                fp0.append(line[0][0])
+                fp1.append(line[0][1])
+                fp2.append(line[1])
+
+                tp0.append(line[0][0])
+                tp1.append(line[0][1])
+                tp2.append(1)
+            fp = np.array([fp0, fp1, fp2])
+            tp = np.array([tp0, tp1, tp2])
+
+            H = self.Haffine_from_points(fp, tp)
+            
+            for p in plist:
+                x1, y1 = p[0]
+                x2, y2 = p[1]
+
+                A = np.array([x1, y1, 1]).reshape(3, 1)
+                B = np.array([x2, y2, 1]).reshape(3, 1)
+                out = B - np.dot(H, A)
+                dist_err = math.hypot(out[0][0], out[1][0])
+                if (dist_err < error):
+                    consensus_set.append(p)
+            
+            if len(consensus_set) >= good_model_num:
+                dists = []
+                for p in consensus_set:
+                    x0, y0 = p[0]
+                    x1, y1 = p[1]
+                    A = np.array([x0, y0, 1]).reshape(3, 1)
+                    B = np.array([x1, y1, 1]).reshape(3, 1)
+
+                    out = B - np.dot(H, A)
+                    dist_err = math.hypot(out[0][0], out[1][0])
+                    dists.append(dist_err)
+
+                if (max(dists) < error) and ((max(dists)) < model_error):
+                    model_error = max(dists)
+                    model_H = H
+        return model_H
+
+    def Haffine_from_points(self, fp,tp):
+        """ find H, affine transformation, such that
+            tp is affine transf of fp"""
+
+        if fp.shape != tp.shape:
+            raise RuntimeError
+
+        #condition points
+        #-from points-
+        m = np.mean(fp[:2], axis=1)
+        maxstd = max(np.std(fp[:2], axis=1))
+        C1 = np.diag([1/maxstd, 1/maxstd, 1])
+        C1[0][2] = -m[0]/maxstd
+        C1[1][2] = -m[1]/maxstd
+        fp_cond = np.dot(C1,fp)
+
+        #-to points-
+        m = np.mean(tp[:2], axis=1)
+        C2 = C1.copy() #must use same scaling for both point sets
+        C2[0][2] = -m[0]/maxstd
+        C2[1][2] = -m[1]/maxstd
+        tp_cond = np.dot(C2,tp)
+
+        #conditioned points have mean zero, so translation is zero
+        A = np.concatenate((fp_cond[:2],tp_cond[:2]), axis=0)
+        U,S,V = linalg.svd(A.T)
+
+        #create B and C matrices as Hartley-Zisserman (2:nd ed) p 130.
+        tmp = V[:2].T
+        B = tmp[:2]
+        C = tmp[2:4]
+
+        tmp2 = np.concatenate((dot(C,linalg.pinv(B)),zeros((2,1))), axis=1)
+        H = np.vstack((tmp2,[0,0,1]))
+
+        #decondition
+        H = np.dot(linalg.inv(C2), np.dot(H,C1))
+
+        return H / H[2][2]
+
+    def affine_transform2(self, im, rot, shift):
+        '''
+            Perform affine transform for 2/3D images.
+        '''
+        if np.ndim(im) == 2:
+            return ndimage.affine_transform(im, rot, shift)
+        else:
+            imr = ndimage.affine_transform(im[:, :, 0], rot, shift)
+            img = ndimage.affine_transform(im[:, :, 1], rot, shift)
+            imb = ndimage.affine_transform(im[:, :, 2], rot, shift)
+
+        return np.dstack((imr, img, imb))
 """
 my previous script
 
@@ -45,32 +142,3 @@ my previous script
         else:
             self.M = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 """
-
-
-
-
-# Converts 3 x N set of points to homogenous coordinates
-def homogeneous(fir):
-    if fir.shape[0] == 3:
-        out = np.zeros_like(fir)
-        for i in range(3):
-            out[i, :] = fir[i, :] / fir[2, :]
-    elif fir.shape[0] == 2: out = np.vstack((fir, np.ones((1, fir.shape[1]), dtype=fir.dtype)))
-    return out
-
-# Gets the homography on an image. Based on 4 point coordinate system.
-def getHomography(p1, p2):
-    A = np.matrix(np.zeros((p1.shape[0]*2, 8), dtype=float), dtype=float)
-    # Filling out A based on equation online
-    for i in range(0, A.shape[0]):
-        if i % 2 == 0:
-            A[i,0], A[i,1], A[i,2], A[i,6], A[i,7] = p1[i/2,0], p1[i/2,1], 1, -p2[i/2,0] * p1[i/2,0], -p2[i/2,0] * p1[i/2,1]
-        else:
-            A[i,3], A[i,4], A[i,5], A[i,6], A[i,7] = p1[i/2,0], p1[i/2,1], 1, -p2[i/2,1] * p1[i/2,0], -p2[i/2,1] * p1[i/2,1]
-
-    # Creating b based on equation
-    b = p2.flatten().reshape(p2.flatten().shape[1], 1).astype(float)
-    
-    # Calculating homography A * x = b
-    x = np.linalg.solve(A,b) if p1.shape[0] == 4 else np.linalg.lstsq(A,b)[0]
-    return np.vstack((x, np.matrix(1))).reshape((3,3))
