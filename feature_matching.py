@@ -11,16 +11,39 @@ class feature_matching(object):
         self.img1 = img1
         self.img2 = img2
         self.match_features()
-        self.write_img(self.match_img)
+        # self.write_img(self.match_img)
 
     def match_features(self):
         # Match features from keypoints, descriptors, and images
         print("Matching Features...")
         # maybe matcher and match should be implemented by ourself
-        matcher = cv2.BFMatcher(cv2.NORM_L2, True)
-        self.matches = matcher.match(self.des1, self.des2)
+        # matcher = cv2.BFMatcher(cv2.NORM_L2, True)
+        # self.matches = matcher.match(self.des1, self.des2)
+
+
+        bf = cv2.BFMatcher()
+        self.matches = bf.knnMatch(self.des1, trainDescriptors=self.des2, k=2)
+
+        # Lowes Ratio
+        good_matches = []
+        for m, n in self.matches:
+            if m.distance < .75 * n.distance:
+                good_matches.append(m)
+
+        src_pts = np.float32([self.kp1[m.queryIdx].pt for m in good_matches])\
+            .reshape(-1, 1, 2)
+        dst_pts = np.float32([self.kp2[m.trainIdx].pt for m in good_matches])\
+            .reshape(-1, 1, 2)
+
+        if len(src_pts) > 4:
+            self.M, self.mask = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5)
+        else:
+            self.M = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        # print(self.M)
         # self.match_img = self.draw_matches(self.img1, self.kp1, self.img2, self.kp2, self.matches)
-        self.match_img = cv2.drawMatches(self.img1, self.kp1, self.img2, self.kp2, self.matches, None)
+        # call function from opencv
+        # print(type(self.matches))
+        # self.match_img = cv2.drawMatches(self.img1, self.kp1, self.img2, self.kp2, self.matches, None)
 
     def write_img(self, img):
         cv2.imwrite('out-feature_matching.png', img)

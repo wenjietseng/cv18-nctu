@@ -12,7 +12,11 @@ from panoramic_image_stiching import image_stiching
 
 fname1 = 'IMG_4477.JPG'
 fname2 = 'IMG_4479.JPG'
+# fname1 = 'img1.png'
+# fname2 = 'img4.png'
 
 img_a = interest_point_detect(fname1)
 img_b = interest_point_detect(fname2)
-match_test = feature_matching(img_a.kp, img_b.kp, img_a.des, img_b.des, img_a.img_gray, img_b.img_gray)
+f_matches = feature_matching(img_a.kp, img_b.kp, img_a.des, img_b.des, img_a.img_gray, img_b.img_gray)
+stich = image_stiching(img_a.img, img_b.img, f_matches.M)
+cv2.imwrite('out-final.png', stich.result_img)

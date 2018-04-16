@@ -11,6 +11,7 @@ class interest_point_detect(object):
         self.kp_features_sift()
         # self.show_img(self.img)
         # self.show_img(self.img_gray)
+        print(len(self.kp))
         self.write_img(self.img_gray)
     
     def read_image(self):
@@ -20,7 +21,7 @@ class interest_point_detect(object):
         else:
             print('Image successfully read ...')
         # resize for easier visualize
-        self.img = cv2.resize(self.img, (400, 400), interpolation = cv2.INTER_AREA)
+        # self.img = cv2.resize(self.img, (500, 500), interpolation = cv2.INTER_AREA)
         self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY) # or specify 0 in imread
 
     def kp_features_sift(self):
