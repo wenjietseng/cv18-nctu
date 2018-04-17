@@ -32,7 +32,8 @@ def parse(source_dir):
         (filename, f, *rest) = line.split()
         filenames += [filename]
         focal_length += [float(f)]
-    img_list = [cv2.imread(os.path.join(source_dir, f), 1) for f in filenames]
+    img_list = [cv2.resize(cv2.imread(os.path.join(source_dir, f), 1), (504, 378)) for f in filenames]
+    # img_list = [cv2.imread(os.path.join(source_dir, f), 1) for f in filenames]
     return (img_list, focal_length)
 
 def cylindrical_projection(img, focal_length):

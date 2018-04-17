@@ -1,0 +1,2 @@
+box.png 50
+box_in_scene.png 50
