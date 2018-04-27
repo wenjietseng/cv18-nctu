@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import random
 
 # create a ShapeError class to raise dimension issue
 class ShapeError(Exception):
@@ -95,6 +94,56 @@ def eight_point_algorithm(x1, x2):
     F = np.dot(np.dot(T2.T, F), T1)
     return F
 
+def RANSAC(x1, x2, iterations=1000, threshold=0.01):
+    """ Find fundamental matrix with RANSAC
+    Args:
+        - two homogeneous points array
+        - iterations for running RANSAC, default is 1000
+        - threshold for selecting inliers
+    Return:
+        - a fundamental matrix
+        - a list of best inliers' index
+    """
+
+    best_num_inliers = 0
+    best_F = None
+    best_inliers_idx = None
+    npts = x1.shape[1]
+    success = 1000
+
+    for i in range(iterations):
+        idx = np.arange(npts)
+        np.random.shuffle(idx)
+        selected = idx[:8]
+        current_x = x1[:, selected]
+        current_xp = x2[:, selected]
+
+        F_estimate = eight_point_algorithm(current_x, current_xp)
+        # compute outliers
+        temp_num_inliers = 0
+        temp_inliers_idx = []
+        # current_diff = np.zeros((0, npts), dtype=float)
+        # threshold = 0.01
+        for j in range(npts):
+            val = np.dot(np.dot(x2[:,j], F_estimate), x1[:,j].T)
+            if abs(val) < threshold:
+                temp_num_inliers += 1
+                temp_inliers_idx.append(j)
+                # current_diff[j] = abs(val)
+        if temp_num_inliers > best_num_inliers:
+            best_num_inliers = temp_num_inliers
+            best_F = F_estimate
+            best_inliers_idx = temp_inliers_idx
+
+        if temp_num_inliers == 0:
+            success-=1
+    print("%d of F were found in RANSAC process" % success)
+    print("The best fundamental matrix F:")
+    print(best_F)
+    print("The best number of inliers: %d" % best_num_inliers)
+    print("The best inliers' set:")
+    print(best_inliers_idx)
+    return best_F, best_inliers_idx
 
 # read images
 img1 = cv2.imread('./homework3/Mesona1.JPG',0)  #queryimage # left image
@@ -128,7 +177,6 @@ for i, (m, n) in enumerate(matches):
 
 x = np.asarray(x)
 xp = np.asarray(xp)
-
 # turn feature points x and xp into homogeneous coordinates
 h_x = np.ones( (x.shape[0], 3), dtype=float)
 h_xp = np.ones( (xp.shape[0], 3), dtype=float)
@@ -136,49 +184,25 @@ h_x[:, :2] = x
 h_xp[:, :2] = xp
 h_x = h_x.T
 h_xp = h_xp.T
+F, inliers = RANSAC(h_x, h_xp, threshold=0.05)
+# inliers_x = x[inliers, :]
+# inliers_xp = xp[inliers, :]
+inliers_x = h_x[:, inliers]
+inliers_xp = h_xp[:, inliers]
+
+points_to_draw = []
 
 
-normalized_x, Tx = normalize_2d_pts(h_x)
-normalized_xp, Txp = normalize_2d_pts(h_xp)
+img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+for i in range(inliers_x.shape[1]):
+    points_to_draw.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
 
-# check dim
-iterations = 1000
-best_num_inliers = 0
-best_F = None
-best_inliers_idx = None
-npts = h_x.shape[1]
-success = 1000
+for i in range(len(points_to_draw)):
+    img1 = cv2.circle(img1, points_to_draw[i], radius=5, color=(255,0,0), thickness=-1)
 
-for i in range(iterations):
-    idx = np.arange(npts)
-    np.random.shuffle(idx)
-    selected = idx[:8]
-    current_x = h_x[:, selected]
-    current_xp = h_xp[:, selected]
-
-    F_estimate = eight_point_algorithm(current_x, current_xp)
-    # compute outliers
-    temp_num_inliers = 0
-    temp_inliers_idx = []
-    # current_diff = np.zeros((0, npts), dtype=float)
-    threshold = 0.01
-    for j in range(npts):
-        val = np.dot(np.dot(normalized_xp[:,j], F_estimate), normalized_x[:,j].T)
-        if abs(val) < threshold:
-            temp_num_inliers += 1
-            temp_inliers_idx.append(j)
-            # current_diff[j] = abs(val)
-    if temp_num_inliers > best_num_inliers:
-        best_num_inliers = temp_num_inliers
-        best_F = F_estimate
-        best_inliers_idx = temp_inliers_idx
-
-    if temp_num_inliers == 0:
-        success-=1
-
-print(best_F)
-print(best_num_inliers)
-print(success)
+cv2.imshow('image', img1)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 
 
