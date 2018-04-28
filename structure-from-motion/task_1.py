@@ -15,10 +15,10 @@ def normalize_2d_pts(pts):
         such that the output points are centered
         at origin and the mean distance from the origin is sqrt(2).
     Args:
-        - a 3xN homogeneous points array
+        pts - a 3xN homogeneous points array
     Return:
-        - a normalized 3xN homogeneous points array
-        - a 3x3 transform matrix T
+        new_pts - a normalized 3xN homogeneous points array
+        T - a 3x3 transform matrix
     """
     # check point shape is in 3xN
     if pts.shape[0] != 3:
@@ -57,9 +57,9 @@ def normalize_2d_pts(pts):
 def constraint_matrix(x1, x2):
     """ Solve a system of homogeneous linear equation Af=0
     Args:
-        - two 3xN points array
+        x1, x2 - two 3xN points array
     Return:
-        - a matrix Af=0 for SVD
+        A - a matrix Af=0 for SVD
     """
     npts = x1.shape[1]
     # np.c_ concatenation along the 2nd axis, which is column
@@ -71,9 +71,9 @@ def constraint_matrix(x1, x2):
 def eight_point_algorithm(x1, x2):
     """ Construct a fundamental matrix with normalized eight-point-algorithm.
     Args:
-        - two sets of homogeneous points array (3xN)
+        x1, x2 - two sets of homogeneous points array (3xN)
     Return:
-        - a fundamental matrix
+        F - a fundamental matrix
     """
     x1, T1 = normalize_2d_pts(x1)
     x2, T2 = normalize_2d_pts(x2)
@@ -94,56 +94,72 @@ def eight_point_algorithm(x1, x2):
     F = np.dot(np.dot(T2.T, F), T1)
     return F
 
-def RANSAC(x1, x2, iterations=1000, threshold=0.01):
+def random_partition(n,n_data):
+    """ return n random rows of data (and also the other len(data)-n rows)
+    Args:
+        n - number to sample
+        n_data - target data
+    Return:
+        idx1 - sampled n random target data idxs
+        idx2 - the rest of target data idxs
+    """
+    all_idxs = np.arange( n_data )
+    np.random.shuffle(all_idxs)
+    idxs1 = all_idxs[:n]
+    idxs2 = all_idxs[n:]
+    return idxs1, idxs2
+
+def RANSAC(x1, x2, n, iters, thres, d, debug=False):
     """ Find fundamental matrix with RANSAC
     Args:
-        - two homogeneous points array
-        - iterations for running RANSAC, default is 1000
-        - threshold for selecting inliers
+        x1, x2- two homogeneous points array
+        n - the minimum number of data values required to fit the model
+        iters - the maximum number of iterations allowed in the algorithm
+        thres - a threshold value for determining when a data point fits a model
+        d - the number of close data values required to assert that a model fits well to data
     Return:
-        - a fundamental matrix
-        - a list of best inliers' index
+        best_F - the best fitted fundamental matrix
+        best_inliers_idx - a list of best fitted inliers' index
+        best_err - the best model error
     """
-
-    best_num_inliers = 0
+    k = 0
     best_F = None
-    best_inliers_idx = None
+    best_inliers_idxs = None
+    best_err = np.inf
     npts = x1.shape[1]
-    success = 1000
 
-    for i in range(iterations):
-        idx = np.arange(npts)
-        np.random.shuffle(idx)
-        selected = idx[:8]
-        current_x = x1[:, selected]
-        current_xp = x2[:, selected]
+    while k < iters:
+        maybe_idxs, test_idxs = random_partition(n, npts)
+        maybe_inliers_x1 = x1[:, maybe_idxs]
+        maybe_inliers_x2 = x2[:, maybe_idxs]
+        test_points_x1 = x1[:, test_idxs]
+        test_points_x2 = x2[:, test_idxs]
 
-        F_estimate = eight_point_algorithm(current_x, current_xp)
-        # compute outliers
-        temp_num_inliers = 0
-        temp_inliers_idx = []
-        # current_diff = np.zeros((0, npts), dtype=float)
-        # threshold = 0.01
-        for j in range(npts):
-            val = np.dot(np.dot(x2[:,j].T, F_estimate), x1[:,j])
-            if abs(val) < threshold:
-                temp_num_inliers += 1
-                temp_inliers_idx.append(j)
-                # current_diff[j] = abs(val)
-        if temp_num_inliers > best_num_inliers:
-            best_num_inliers = temp_num_inliers
-            best_F = F_estimate
-            best_inliers_idx = temp_inliers_idx
-
-        if temp_num_inliers == 0:
-            success-=1
-    print("%d of F were found in RANSAC process" % success)
-    print("The best fundamental matrix F:")
-    print(best_F)
-    print("The best number of inliers: %d" % best_num_inliers)
-    print("The best inliers' set:")
-    print(best_inliers_idx)
-    return best_F, best_inliers_idx
+        maybe_F = eight_point_algorithm(maybe_inliers_x1, maybe_inliers_x2)
+        test_err = abs(np.sum( np.dot(np.dot(test_points_x2.T, maybe_F), test_points_x1), axis=1)) # axis=1 along row
+        also_idxs = test_idxs[test_err < thres]
+        also_inliers_x1 = x1[:, also_idxs]
+        also_inliers_x2 = x2[:, also_idxs]
+        
+        if debug:
+            print('min test_err: ', test_err.min())
+            print('max test_err: ', test_err.max())
+            print('mean test_err: ', np.mean(test_err))
+            print('iteration %d - find %d also inliers' % (k, len(also_idxs)))
+        if len(also_idxs) > d:
+            better_x1 = np.concatenate((maybe_inliers_x1, also_inliers_x1), axis=1)
+            better_x2 = np.concatenate((maybe_inliers_x2, also_inliers_x2), axis=1)
+            better_F = eight_point_algorithm(better_x1, better_x2)
+            better_errs = np.sum( np.dot(np.dot(better_x2.T, maybe_F), better_x1), axis=1) 
+            this_err = np.mean(better_errs)
+            if this_err < best_err:
+                best_F = better_F
+                best_err = this_err
+                best_inliers_idxs = np.concatenate((maybe_idxs, also_idxs))
+        k+=1
+    if best_F is None:
+        raise ValueError("did not reach acceptance criteria")
+    return best_F, best_inliers_idxs
 
 # read images
 img1 = cv2.imread('./homework3/Mesona1.JPG',0)  #queryimage # left image
@@ -184,23 +200,24 @@ h_x[:, :2] = x
 h_xp[:, :2] = xp
 h_x = h_x.T
 h_xp = h_xp.T
-F, inliers = RANSAC(h_x, h_xp, threshold=0.05)
-# inliers_x = x[inliers, :]
-# inliers_xp = xp[inliers, :]
+
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=300, d=200)
+
+print(F, len(inliers))
+
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
 
+
 points_to_draw = []
-
-
-img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
 for i in range(inliers_x.shape[1]):
     points_to_draw.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
 
 for i in range(len(points_to_draw)):
-    img1 = cv2.circle(img1, points_to_draw[i], radius=5, color=(255,0,0), thickness=-1)
+    img1 = cv2.circle(img2, points_to_draw[i], radius=3, color=(255,0,0), thickness=-1)
 
-cv2.imshow('image', img1)
+cv2.imshow('image', img2)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
