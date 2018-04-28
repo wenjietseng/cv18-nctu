@@ -272,30 +272,31 @@ cv2.imwrite('./out_imgs/kp_and_epipolar.png', vis)
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-
+"""
+def drawlines(img1,img2,lines,pts1,pts2):
+    ''' img1 - image on which we draw the epilines for the points in img2
+        lines - corresponding epilines '''
+    r,c = img1.shape
+    img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
+    img2 = cv2.cvtColor(img2,cv2.COLOR_GRAY2BGR)
+    for r,pt1,pt2 in zip(lines,pts1,pts2):
+        color = tuple(np.random.randint(0,255,3).tolist())
+        x0,y0 = map(int, [0, -r[2]/r[1] ])
+        x1,y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
+        img1 = cv2.line(img1, (x0,y0), (x1,y1), color,1)
+        img1 = cv2.circle(img1,tuple(pt1),5,color,-1)
+        img2 = cv2.circle(img2,tuple(pt2),5,color,-1)
+    return img1,img2
 
 """
+
+
+
 # the given intrinsic parameters provided in hw3
 K = np.array([[1.4219, 0.0005, 0.5092],
               [0, 1.4219, 0.3802],
               [0, 0, 0.0010]], dtype=float)
 K_inv = np.linalg.inv(K)
 
-#
-# I guess K is for checking
-#
-# convert to normalized coords by pre-multiplying all points with the inverse of calibration matrix
-# set first camera's coord to world coord
-X = np.dot(K_inv, x1)
-Xp = np.dot(K_inv, x2)
-
-m = [np.mean(X[0,:]), np.mean(X[1,:])]
-sd = [np.std(X[0,:]), np.std(X[1,:])]
-print(m, sd)
-
-m = [np.mean(Xp[0,:]), np.mean(Xp[1,:])]
-sd = [np.std(Xp[0,:]), np.std(Xp[1,:])]
-print(m, sd)
-"""
 
 
