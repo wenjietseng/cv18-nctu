@@ -125,7 +125,7 @@ def RANSAC(x1, x2, iterations=1000, threshold=0.01):
         # current_diff = np.zeros((0, npts), dtype=float)
         # threshold = 0.01
         for j in range(npts):
-            val = np.dot(np.dot(x2[:,j], F_estimate), x1[:,j].T)
+            val = np.dot(np.dot(x2[:,j].T, F_estimate), x1[:,j])
             if abs(val) < threshold:
                 temp_num_inliers += 1
                 temp_inliers_idx.append(j)
