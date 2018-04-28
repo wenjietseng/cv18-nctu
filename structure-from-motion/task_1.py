@@ -161,6 +161,40 @@ def RANSAC(x1, x2, n, iters, thres, d, debug=False):
         raise ValueError("did not reach acceptance criteria")
     return best_F, best_inliers_idxs
 
+def prepare_epilines(F, inliers_pts, h, w):
+    """ compute points for drawing epipolar lines
+    Args:
+        F - fundamental matrix
+        inliers_pts - a 3xN points array of inliers
+    Return:
+        pairs_for_lines - a list contains all points for epilines
+    """
+
+    pairs_for_lines = []
+    for p in range(inliers_pts.shape[1]):
+        [a, b, c] = np.dot(F, inliers_pts[:, p])
+        pts_pairs = []
+        # ax + by + c = 0
+        # we obtain a, b, c and have to compute 2 points for drawing
+        # x = 1/a*(-c-by)
+        # y = 1/b*(-c-ax)
+        y_x0 = int(1/a*(-c))
+        y_xh = int(1/a*(-c-b*h))
+        x_y0 = int(1/b*(-c))
+        x_yw = int(1/b*(-c-a*w))
+
+        if 0 <= y_x0 and y_x0 <= h:
+            pts_pairs.append((0, y_x0))
+        if 0 <= y_xh and y_xh <= h:
+            pts_pairs.append((0, y_xh))
+        if 0 <= x_y0 and x_y0 <= w:
+            pts_pairs.append((x_y0, 0))
+        if 0 <= x_yw and x_yw <= w:
+            pts_pairs.append((x_yw, w))
+        if (len(pts_pairs) == 2):
+            pairs_for_lines.append(pts_pairs)
+    return pairs_for_lines
+
 # read images
 img1 = cv2.imread('./homework3/Mesona1.JPG',0)  #queryimage # left image
 img2 = cv2.imread('./homework3/Mesona2.JPG',0)  #trainimage # right image
@@ -186,10 +220,10 @@ xp = []
 
 # ratio test as per Lowe's paper
 for i, (m, n) in enumerate(matches):
-    if m.distance < 0.8 * n.distance:
+    if m.distance < 0.7 * n.distance:
         good.append(m)
-        x.append(kp2[m.trainIdx].pt)
-        xp.append(kp1[m.queryIdx].pt)
+        x.append(kp1[m.queryIdx].pt)
+        xp.append(kp2[m.trainIdx].pt)
 
 x = np.asarray(x)
 xp = np.asarray(xp)
@@ -201,25 +235,42 @@ h_xp[:, :2] = xp
 h_x = h_x.T
 h_xp = h_xp.T
 
-F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=300, d=200)
-
-print(F, len(inliers))
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=500, d=30)
 
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
+print(len(inliers))
+
+h, w = img1.shape
+# F * xp is the epipolar line associated with x (l = F * xp)
+l = prepare_epilines(F, inliers_xp, h, w)
+# F.T * x is the epipolar line associated with xp (lp = F.T * x)
+lp = prepare_epilines(F.T, inliers_x, h, w)
+
+print(len(l), len(lp))
 
 
-points_to_draw = []
-img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+# draw interest points and their corresponding epipolar lines
+img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+
+# kp on img1, epi lines on img2
+kp_to_draw = []
 for i in range(inliers_x.shape[1]):
-    points_to_draw.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
+    kp_to_draw.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
 
-for i in range(len(points_to_draw)):
-    img1 = cv2.circle(img2, points_to_draw[i], radius=3, color=(255,0,0), thickness=-1)
+for i in range(len(kp_to_draw)):
+    img1_vis = cv2.circle(img1_vis, kp_to_draw[i], radius=3, color=(255,0,0), thickness=-1)
 
-cv2.imshow('image', img2)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+for i in range(len(l)):
+    img2_vis = cv2.line(img2_vis, l[i][0], l[i][1], (255, 0, 0), 1)
+
+vis = np.concatenate((img1_vis, img2_vis), axis=1)
+
+# cv2.imshow('image', vis)
+cv2.imwrite('./out_imgs/kp_and_epipolar.png', vis)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
 
 
 
