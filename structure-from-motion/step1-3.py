@@ -289,9 +289,9 @@ def drawlines(img1,img2,lines,pts1,pts2):
     return img1,img2
 
 """
-
-
-
+#
+# step 4 - 6
+#
 # the given intrinsic parameters provided in hw3
 K = np.array([[1.4219, 0.0005, 0.5092],
               [0, 1.4219, 0.3802],
