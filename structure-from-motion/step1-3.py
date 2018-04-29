@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-# create a ShapeError class to raise dimension issue
 class ShapeError(Exception):
+    """ create a ShapeError class to raise dimension issue
+    """
     def __init__(self, x):
         self.x = x
     
@@ -290,13 +291,40 @@ def drawlines(img1,img2,lines,pts1,pts2):
 
 """
 #
-# step 4 - 6
+# step 4: essential matrix
 #
 # the given intrinsic parameters provided in hw3
 K = np.array([[1.4219, 0.0005, 0.5092],
               [0, 1.4219, 0.3802],
               [0, 0, 0.0010]], dtype=float)
-K_inv = np.linalg.inv(K)
+
+# assume camera matrix P1 is P=[I|0]
+P1 = np.array([[1, 0, 0, 0],
+               [0, 1, 0, 0],
+               [0, 0, 1, 0]], dtype=float)
+
+# E = K1.T * F * K2
+E = np.dot(np.dot(K.T, F), K)
+U, S, V = np.linalg.svd(E)
+m = (S[0]+S[1])/2
+E = np.dot(np.dot(U, np.diag((m,m,0))), V)
+U, S, V = np.linalg.svd(E)
+W = np.array([[0, -1, 0],
+              [1,  0, 0],
+              [0,  0, 1]], dtype=float)
+u3 = U[:,2]
+P2_1 = np.c_[np.dot(np.dot(U, W),   V),  u3]
+P2_2 = np.c_[np.dot(np.dot(U, W),   V), -u3]
+P2_3 = np.c_[np.dot(np.dot(U, W.T), V),  u3]
+P2_4 = np.c_[np.dot(np.dot(U, W.T), V), -u3]
+
+
+#
+# step 5: find out most appropriate answer
+#
 
 
 
+#
+# step 6: triangulation to get 3D points
+#
