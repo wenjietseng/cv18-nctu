@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class ShapeError(Exception):
     """ create a ShapeError class to raise dimension issue
@@ -274,7 +275,10 @@ def triangulation(P2, x, xp):
     Returns:
         all_X.T - the 3D coords points 4xN
     """
-    # TO-DO: precondition check the third element is 1
+    # precondition check the third element is 1
+    for i in range(x.shape[0]-1):
+        x[i,:] = x[i,:] / x[2,:]
+        xp[i,:] = xp[i,:] / xp[2,:]
 
     # assume camera matrix P1 is P=[I|0] 
     P1 = np.array([[1, 0, 0, 0],
@@ -303,9 +307,11 @@ def triangulation(P2, x, xp):
         X = V[:, -1]
         all_X[i,:] = X
     
-    # TO-DO: convert 4xN into 3xN
-
-    return all_X.T
+    # convert 4xN into 3xN
+    for i in range(all_X.shape[1]-1):
+        all_X[:,i] = all_X[:,i] / all_X[:,3]
+    all_X = all_X[:,:3].T
+    return all_X
 
 
 # read images (can be a function)
@@ -399,3 +405,25 @@ all_3dpoints_1 = triangulation(P2_1, inliers_x, inliers_xp)
 all_3dpoints_2 = triangulation(P2_2, inliers_x, inliers_xp)
 all_3dpoints_3 = triangulation(P2_3, inliers_x, inliers_xp)
 all_3dpoints_4 = triangulation(P2_4, inliers_x, inliers_xp)
+print(all_3dpoints_1.shape)
+
+
+
+def plot3d(_3dpoints):
+    # check dimensions
+    # 3d scatter plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(_3dpoints[0,:], _3dpoints[1,:], _3dpoints[2,:], c='b')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    plt.show()
+
+plot3d(all_3dpoints_1)
+plot3d(all_3dpoints_2)
+plot3d(all_3dpoints_3)
+plot3d(all_3dpoints_4)
