@@ -244,10 +244,15 @@ print(len(inliers))
 
 h, w = img1.shape
 # F * xp is the epipolar line associated with x (l = F * xp)
-l = prepare_epilines(F, inliers_xp, h, w)
+# l = prepare_epilines(F, inliers_xp, h, w)
 # F.T * x is the epipolar line associated with xp (lp = F.T * x)
-lp = prepare_epilines(F.T, inliers_x, h, w)
+# lp = prepare_epilines(F.T, inliers_x, h, w)
 
+###### try this
+# l = F.T xp
+l = prepare_epilines(F.T, inliers_xp, h, w)
+# l' = Fx
+lp = prepare_epilines(F, inliers_x, h, w)
 print(len(l), len(lp))
 
 
@@ -321,6 +326,28 @@ P2_4 = np.c_[np.dot(np.dot(U, W.T), V), -u3]
 #
 # step 5: triangulation to get 3D points of each P2
 #
+
+u = inliers_x[0, 0]
+v = inliers_x[1, 0]
+up = inliers_xp[0, 0]
+vp = inliers_xp[1, 0]
+p1 = P1[0, :]
+p2 = P1[1, :]
+p3 = P1[2, :]
+
+p1p = P2_1[0, :]
+p2p = P2_1[1, :]
+p3p = P2_1[2, :]
+
+A = np.r_[[u * p3.T - p1.T],
+          [v * p3.T - p2.T],
+          [up * p3p.T - p1p.T],
+          [vp * p3p.T - p2p.T]]
+
+U, S, V = np.linalg.svd(A)
+X = V[:, -1]
+
+print(X)
 
 #
 # step 6: find out most appropriate answer
