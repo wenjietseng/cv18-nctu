@@ -11,6 +11,43 @@ class ShapeError(Exception):
     def __str__(self):
         return self.x
 
+def find_matches(img1, img2):
+    """ using SIFT to find interest points and descriptors in two images
+    Args:
+        img1, img2 - two images
+    Return:
+        x, xp - interest points in image coordinate
+    """
+    # sift
+    sift = cv2.xfeatures2d.SIFT_create()
+
+    # find the keypoints and descriptors with SIFT
+    kp1, des1 = sift.detectAndCompute(img1, None)
+    kp2, des2 = sift.detectAndCompute(img2, None)
+
+    # FLANN parameters
+    FLANN_INDEX_KDTREE = 0
+    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+    search_params = dict(checks=50)
+
+    flann = cv2.FlannBasedMatcher(index_params,search_params)
+    matches = flann.knnMatch(des1,des2,k=2)
+
+    good = []
+    x = []
+    xp = []
+
+    # ratio test as per Lowe's paper
+    for i, (m, n) in enumerate(matches):
+        if m.distance < 0.7 * n.distance:
+            good.append(m)
+            x.append(kp1[m.queryIdx].pt)
+            xp.append(kp2[m.trainIdx].pt)
+
+    x = np.asarray(x)
+    xp = np.asarray(xp)
+    return x, xp
+
 def normalize_2d_pts(pts):
     """ translates and scales the input (homogeneous) points
         such that the output points are centered
@@ -196,39 +233,89 @@ def prepare_epilines(F, inliers_pts, h, w):
             pairs_for_lines.append(pts_pairs)
     return pairs_for_lines
 
-# read images
+def find_second_camera_mat(K1, K2, F):
+    """ Given K1, K2, and F, one can obtain essential matrix E
+        decompose E to find four possible solutions of the second camera matrix
+    Args:
+        K1 - intrinsic matrix of camera 1
+        K2 - intrinsic matrix of camera 2
+        F - fundamental matrix
+    Return:
+        P2_1, P2_2, P2_3, P2_4 - four possible solution of camera matrix 2
+    """
+
+    # assume camera matrix P1 is P=[I|0]
+    P1 = np.array([[1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0]], dtype=float)
+
+    # E = K1.T * F * K2
+    E = np.dot(np.dot(K1.T, F), K2)
+    U, S, V = np.linalg.svd(E)
+    m = (S[0]+S[1])/2
+    E = np.dot(np.dot(U, np.diag((m,m,0))), V)
+    U, S, V = np.linalg.svd(E)
+    W = np.array([[0, -1, 0],
+                  [1,  0, 0],
+                  [0,  0, 1]], dtype=float)
+    u3 = U[:,2]
+    P2_1 = np.c_[np.dot(np.dot(U, W),   V),  u3]
+    P2_2 = np.c_[np.dot(np.dot(U, W),   V), -u3]
+    P2_3 = np.c_[np.dot(np.dot(U, W.T), V),  u3]
+    P2_4 = np.c_[np.dot(np.dot(U, W.T), V), -u3]
+    return P2_1, P2_2, P2_3, P2_4
+
+def triangulation(P2, x, xp):
+    """ Bring points on two images back to 3D coordinates
+    Args:
+        P2 - the second camera matrix 3x4
+        x - homogeneous points in the first image 3xN
+        xp - homogeneous points in the first image 3xN
+    Returns:
+        all_X.T - the 3D coords points 4xN
+    """
+    # TO-DO: precondition check the third element is 1
+
+    # assume camera matrix P1 is P=[I|0] 
+    P1 = np.array([[1, 0, 0, 0],
+                   [0, 1, 0, 0],
+                   [0, 0, 1, 0]], dtype=float)
+    p1 = P1[0, :]
+    p2 = P1[1, :]
+    p3 = P1[2, :]
+    p1p = P2[0, :]
+    p2p = P2[1, :]
+    p3p = P2[2, :]
+
+    all_X = np.zeros((x.shape[1], 4), dtype=float)
+    for i in range(x.shape[1]):
+        u = x[0, i]
+        v = x[1, i]
+        up = xp[0, i]
+        vp = xp[1, i]
+
+        A = np.r_[[u * p3.T - p1.T],
+                  [v * p3.T - p2.T],
+                  [up * p3p.T - p1p.T],
+                  [vp * p3p.T - p2p.T]]
+
+        U, S, V = np.linalg.svd(A)
+        X = V[:, -1]
+        all_X[i,:] = X
+    
+    # TO-DO: convert 4xN into 3xN
+
+    return all_X.T
+
+
+# read images (can be a function)
 img1 = cv2.imread('./homework3/Mesona1.JPG',0)  #queryimage # left image
 img2 = cv2.imread('./homework3/Mesona2.JPG',0)  #trainimage # right image
 
-# sift
-sift = cv2.xfeatures2d.SIFT_create()
+# step 1: Find out correspondence across images
 
-# find the keypoints and descriptors with SIFT
-kp1, des1 = sift.detectAndCompute(img1, None)
-kp2, des2 = sift.detectAndCompute(img2, None)
-
-# FLANN parameters
-FLANN_INDEX_KDTREE = 0
-index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-search_params = dict(checks=50)
-
-flann = cv2.FlannBasedMatcher(index_params,search_params)
-matches = flann.knnMatch(des1,des2,k=2)
-
-good = []
-x = []
-xp = []
-
-# ratio test as per Lowe's paper
-for i, (m, n) in enumerate(matches):
-    if m.distance < 0.7 * n.distance:
-        good.append(m)
-        x.append(kp1[m.queryIdx].pt)
-        xp.append(kp2[m.trainIdx].pt)
-
-x = np.asarray(x)
-xp = np.asarray(xp)
-# turn feature points x and xp into homogeneous coordinates
+x, xp = find_matches(img1, img2)
+# turn feature points x and xp into homogeneous coordinates (can be a function)
 h_x = np.ones( (x.shape[0], 3), dtype=float)
 h_xp = np.ones( (xp.shape[0], 3), dtype=float)
 h_x[:, :2] = x
@@ -236,12 +323,13 @@ h_xp[:, :2] = xp
 h_x = h_x.T
 h_xp = h_xp.T
 
+# step 2: estimate fundamental matrix with RANSAC
 F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=500, d=30)
-
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
 print(len(inliers))
 
+# step 3: draw the interest points and the corresponding epipolar lines
 h, w = img1.shape
 # F * xp is the epipolar line associated with x (l = F * xp)
 # l = prepare_epilines(F, inliers_xp, h, w)
@@ -295,60 +383,19 @@ def drawlines(img1,img2,lines,pts1,pts2):
     return img1,img2
 
 """
-#
-# step 4: essential matrix
-#
+
+# step 4: get 4 possible solutions of essential matrix from fundamental matrix
 # the given intrinsic parameters provided in hw3
 K = np.array([[1.4219, 0.0005, 0.5092],
               [0, 1.4219, 0.3802],
               [0, 0, 0.0010]], dtype=float)
 
-# assume camera matrix P1 is P=[I|0]
-P1 = np.array([[1, 0, 0, 0],
-               [0, 1, 0, 0],
-               [0, 0, 1, 0]], dtype=float)
+P2_1, P2_2, P2_3, P2_4 = find_second_camera_mat(K, K, F)
 
-# E = K1.T * F * K2
-E = np.dot(np.dot(K.T, F), K)
-U, S, V = np.linalg.svd(E)
-m = (S[0]+S[1])/2
-E = np.dot(np.dot(U, np.diag((m,m,0))), V)
-U, S, V = np.linalg.svd(E)
-W = np.array([[0, -1, 0],
-              [1,  0, 0],
-              [0,  0, 1]], dtype=float)
-u3 = U[:,2]
-P2_1 = np.c_[np.dot(np.dot(U, W),   V),  u3]
-P2_2 = np.c_[np.dot(np.dot(U, W),   V), -u3]
-P2_3 = np.c_[np.dot(np.dot(U, W.T), V),  u3]
-P2_4 = np.c_[np.dot(np.dot(U, W.T), V), -u3]
+# step 5: find out most appropriate answer
+# step 6: triangulation to get 3D points of each P2
 
-#
-# step 5: triangulation to get 3D points of each P2
-#
-
-u = inliers_x[0, 0]
-v = inliers_x[1, 0]
-up = inliers_xp[0, 0]
-vp = inliers_xp[1, 0]
-p1 = P1[0, :]
-p2 = P1[1, :]
-p3 = P1[2, :]
-
-p1p = P2_1[0, :]
-p2p = P2_1[1, :]
-p3p = P2_1[2, :]
-
-A = np.r_[[u * p3.T - p1.T],
-          [v * p3.T - p2.T],
-          [up * p3p.T - p1p.T],
-          [vp * p3p.T - p2p.T]]
-
-U, S, V = np.linalg.svd(A)
-X = V[:, -1]
-
-print(X)
-
-#
-# step 6: find out most appropriate answer
-#
+all_3dpoints_1 = triangulation(P2_1, inliers_x, inliers_xp)
+all_3dpoints_2 = triangulation(P2_2, inliers_x, inliers_xp)
+all_3dpoints_3 = triangulation(P2_3, inliers_x, inliers_xp)
+all_3dpoints_4 = triangulation(P2_4, inliers_x, inliers_xp)
