@@ -44,7 +44,7 @@ def find_matches(img1, img2):
             good.append(m)
             x.append(kp1[m.queryIdx].pt)
             xp.append(kp2[m.trainIdx].pt)
-
+    
     x = np.asarray(x)
     xp = np.asarray(xp)
     return x, xp
@@ -63,6 +63,7 @@ def normalize_2d_pts(pts):
     if pts.shape[0] != 3:
         raise ShapeError('Input point array must be 3xN')
 
+    # precondition
     finiteind = abs(pts[2]) > np.finfo(float).eps
     pts[0, finiteind] = pts[0, finiteind]/pts[2, finiteind]
     pts[1, finiteind] = pts[1, finiteind]/pts[2, finiteind]
@@ -80,9 +81,9 @@ def normalize_2d_pts(pts):
     scale = np.sqrt(2) / mean_dist
 
     '''
-        T = [scale   0   -scale*c(1)
-            0     scale -scale*c(2)
-            0       0      1      ];
+    T = [scale      0  -scale*c(1)
+             0  scale  -scale*c(2)
+             0      0            1]
     '''
     T = np.eye(3)
     T[0][0] = scale
@@ -118,7 +119,7 @@ def eight_point_algorithm(x1, x2):
     x2, T2 = normalize_2d_pts(x2)
 
     A = constraint_matrix(x1, x2)
-
+    
     # 1. Af=0 implies that the fundamental mat F can be extracted from singular vector of V
     # corresponding to the smallest singular value
     U, S, V = np.linalg.svd(A)
@@ -127,11 +128,11 @@ def eight_point_algorithm(x1, x2):
     # 2. Resolve det(F) = 0 constraint using SVD. Fundamental matrix should be rank 2
     U, D, V = np.linalg.svd(F)
     D[2] = 0
-    F = np.dot(U, np.dot(np.diag(D), V.T))
+    F = np.dot(np.dot(U, np.diag(D)), V.T)
 
-    # 3. denormalize F = T2.T * F_hat * T1
+    # 3. denormalize F = T2.T * F(normalized) * T1
     F = np.dot(np.dot(T2.T, F), T1)
-    return F
+    return F/F[2,2]
 
 def random_partition(n,n_data):
     """ return n random rows of data (and also the other len(data)-n rows)
@@ -330,45 +331,93 @@ h_x = h_x.T
 h_xp = h_xp.T
 
 # step 2: estimate fundamental matrix with RANSAC
-F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=500, d=30)
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=300, d=300)
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
+# F = eight_point_algorithm(inliers_x, inliers_xp)
+print(len(inliers)/h_x.shape[1])
 print(len(inliers))
+print(F)
 
 # step 3: draw the interest points and the corresponding epipolar lines
-h, w = img1.shape
 # F * xp is the epipolar line associated with x (l = F * xp)
 # l = prepare_epilines(F, inliers_xp, h, w)
 # F.T * x is the epipolar line associated with xp (lp = F.T * x)
 # lp = prepare_epilines(F.T, inliers_x, h, w)
 
 ###### try this
-# l = F.T xp
-l = prepare_epilines(F.T, inliers_xp, h, w)
-# l' = Fx
-lp = prepare_epilines(F, inliers_x, h, w)
-print(len(l), len(lp))
+# l = F.T * xp
 
+h, w = img1.shape
+lines_on_img1 = np.dot(F.T, inliers_xp).T
+print(lines_on_img1)
+# l' = F * x
+lines_on_img2 = np.dot(F, inliers_x).T
 
-# draw interest points and their corresponding epipolar lines
 img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
 img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
 
-# kp on img1, epi lines on img2
-kp_to_draw = []
-for i in range(inliers_x.shape[1]):
-    kp_to_draw.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
-
-for i in range(len(kp_to_draw)):
-    img1_vis = cv2.circle(img1_vis, kp_to_draw[i], radius=3, color=(255,0,0), thickness=-1)
-
-for i in range(len(l)):
-    img2_vis = cv2.line(img2_vis, l[i][0], l[i][1], (255, 0, 0), 1)
+for r, pt_x, pt_xp in zip(lines_on_img1, inliers_x.T, inliers_xp.T):
+    color = tuple(np.random.randint(0, 255, 3).tolist())
+    x0, y0 = map(int, [0, -r[2]/r[1]])
+    x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[1]])
+    img1_vis = cv2.line(img1_vis, (y0,x0), (y1,x1), color, 1)
+    img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
+    img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
 
 vis = np.concatenate((img1_vis, img2_vis), axis=1)
+cv2.imshow('image', vis)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
+img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+
+for r, pt_x, pt_xp in zip(lines_on_img2, inliers_x.T, inliers_xp.T):
+    color = tuple(np.random.randint(0, 255, 3).tolist())
+    x0, y0 = map(int, [0, -r[2]/r[1]])
+    x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[1]])
+    img2_vis = cv2.line(img2_vis, (x0,y0), (x1,y1), color, 1)
+    img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
+    img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
+
+vis = np.concatenate((img1_vis, img2_vis), axis=1)
+cv2.imshow('image', vis)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+
+# l = prepare_epilines(F.T, inliers_xp, h, w)
+
+# l' = Fx
+# lp = prepare_epilines(F, inliers_x, h, w)
+# print(len(l), len(lp))
+
+
+# draw interest points and their corresponding epipolar lines
+# img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+# img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+# # kp on img1, epi lines on img2
+# kp_to_draw_x = []
+# kp_to_draw_xp = []
+
+# draw key points
+# for i in range(inliers_x.shape[1]):
+#     kp_to_draw_x.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
+#     kp_to_draw_xp.append((int(inliers_xp[0,i]), int(inliers_xp[1,i])))
+
+# for i in range(len(kp_to_draw_x)):
+#     img1_vis = cv2.circle(img1_vis, kp_to_draw_x[i], radius=3, color=(255,0,0), thickness=-1)
+#     img2_vis = cv2.circle(img2_vis, kp_to_draw_xp[i], radius=3, color=(255,0,0),thickness=-1)
+
+# for i in range(len(l)):
+#      img1_vis = cv2.line(img1_vis, l[i][0], l[i][1], (255, 0, 0), 1)
+#      img2_vis = cv2.line(img2_vis, lp[i][0], lp[i][1], (255, 0, 0), 1)
+
+# vis = np.concatenate((img1_vis, img2_vis), axis=1)
 # cv2.imshow('image', vis)
-cv2.imwrite('./out_imgs/kp_and_epipolar.png', vis)
+# cv2.imwrite('./out_imgs/kp_and_epipolar.png', vis)
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
@@ -392,6 +441,7 @@ def drawlines(img1,img2,lines,pts1,pts2):
 
 # step 4: get 4 possible solutions of essential matrix from fundamental matrix
 # the given intrinsic parameters provided in hw3
+
 K = np.array([[1.4219, 0.0005, 0.5092],
               [0, 1.4219, 0.3802],
               [0, 0, 0.0010]], dtype=float)
@@ -405,7 +455,7 @@ all_3dpoints_1 = triangulation(P2_1, inliers_x, inliers_xp)
 all_3dpoints_2 = triangulation(P2_2, inliers_x, inliers_xp)
 all_3dpoints_3 = triangulation(P2_3, inliers_x, inliers_xp)
 all_3dpoints_4 = triangulation(P2_4, inliers_x, inliers_xp)
-print(all_3dpoints_1.shape)
+# print(all_3dpoints_1.shape)
 
 
 def plot3d(_3dpoints):

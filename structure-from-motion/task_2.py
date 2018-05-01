@@ -330,11 +330,11 @@ h_x = h_x.T
 h_xp = h_xp.T
 
 # step 2: estimate fundamental matrix with RANSAC
-F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=500, d=30)
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=600, d=300)
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
 print(len(inliers))
-
+print(F)
 # step 3: draw the interest points and the corresponding epipolar lines
 h, w = img1.shape
 # F * xp is the epipolar line associated with x (l = F * xp)
