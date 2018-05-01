@@ -408,7 +408,6 @@ all_3dpoints_4 = triangulation(P2_4, inliers_x, inliers_xp)
 print(all_3dpoints_1.shape)
 
 
-
 def plot3d(_3dpoints):
     # check dimensions
     # 3d scatter plot
