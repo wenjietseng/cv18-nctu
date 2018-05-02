@@ -3,17 +3,18 @@
 % csvRange:[x�_�I,y�_�I,x���I,y���I]
 
 filename = 'matrixtest.csv';
-%pts3d = csvread('../out_data/task1-3dp-mesona.csv');
-%pts2d = csvread('../out_data/task1-2dp-mesona.csv');  %�N matrixtest.csv �����eŪ��x�} pts
-pts3d = csvread('../out_data/task2-3dp-statue.csv');
-pts2d = csvread('../out_data/task2-2dp-statue.csv');  %�N matrixtest.csv �����eŪ��x�} pts
-
+pts3d = csvread('../out_data/task1-3dp-mesona.csv');
+pts2d = csvread('../out_data/task1-2dp-mesona.csv');  %�N matrixtest.csv �����eŪ��x�} pts
+% pts3d = csvread('../out_data/task2-3dp-statue.csv');
+% pts2d = csvread('../out_data/task2-2dp-statue.csv');  %�N matrixtest.csv �����eŪ��x�} pts
+ 
 
 %points3D = pts(:,1:3); % pts(:,i:j)�����x�}pts����i��j�C
 %points2D = pts(:,4:5);
 %disp(points3D); %�bcommand window��ܵ��G
 CameraMatrix = [1 0 0 0;0 1 0 0;0 0 1 0];  %�O�� K ��?
-tex_name = 'Statue1.bmp';
+tex_name = 'Mesona1.JPG'
+% tex_name = 'Statue1.bmp';
 im_index = 1;
 
 obj_main(pts3d,pts2d,CameraMatrix,tex_name,im_index);
