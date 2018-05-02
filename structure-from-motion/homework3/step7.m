@@ -3,8 +3,8 @@
 % csvRange:[x�_�I,y�_�I,x���I,y���I]
 
 filename = 'matrixtest.csv';
-pts3d = csvread('../out_data/task1-3dp.csv');
-pts2d = csvread('../out_data/task1-2dp.csv');  %�N matrixtest.csv �����eŪ��x�} pts
+pts3d = csvread('../out_data/task1-3dpmesona.csv');
+pts2d = csvread('../out_data/task1-2dpmesona.csv');  %�N matrixtest.csv �����eŪ��x�} pts
 %points3D = pts(:,1:3); % pts(:,i:j)�����x�}pts����i��j�C
 %points2D = pts(:,4:5);
 %disp(points3D); %�bcommand window��ܵ��G
