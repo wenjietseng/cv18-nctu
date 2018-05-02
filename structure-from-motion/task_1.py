@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import csv
 
 class ShapeError(Exception):
     """ create a ShapeError class to raise dimension issue
@@ -234,7 +235,7 @@ def RANSAC(x1, x2, n, iters, thres, d, debug=False):
         raise ValueError("did not reach acceptance criteria")
     return best_F, best_inliers_idxs
 
-def prepare_epilines(F, inliers_pts, h, w):
+def draw_epilines(l, lp, x, xp, img1, img2):
     """ compute points for drawing epipolar lines
     Args:
         F - fundamental matrix
@@ -242,31 +243,40 @@ def prepare_epilines(F, inliers_pts, h, w):
     Return:
         pairs_for_lines - a list contains all points for epilines
     """
+    img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+    img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+    h, w = img1.shape
 
-    pairs_for_lines = []
-    for p in range(inliers_pts.shape[1]):
-        [a, b, c] = np.dot(F, inliers_pts[:, p])
-        pts_pairs = []
-        # ax + by + c = 0
-        # we obtain a, b, c and have to compute 2 points for drawing
-        # x = 1/a*(-c-by)
-        # y = 1/b*(-c-ax)
-        y_x0 = int(1/a*(-c))
-        y_xh = int(1/a*(-c-b*h))
-        x_y0 = int(1/b*(-c))
-        x_yw = int(1/b*(-c-a*w))
+    for r, pt_x, pt_xp in zip(l, x.T, xp.T):
+        color = tuple(np.random.randint(0, 255, 3).tolist())
+        x0, y0 = map(int, [0, -r[2]/r[1]])
+        x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[0]])
+        img1_vis = cv2.line(img1_vis, (y0,x0), (y1,x1), color, 1)
+        img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
+        img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
 
-        if 0 <= y_x0 and y_x0 <= h:
-            pts_pairs.append((0, y_x0))
-        if 0 <= y_xh and y_xh <= h:
-            pts_pairs.append((0, y_xh))
-        if 0 <= x_y0 and x_y0 <= w:
-            pts_pairs.append((x_y0, 0))
-        if 0 <= x_yw and x_yw <= w:
-            pts_pairs.append((x_yw, w))
-        if (len(pts_pairs) == 2):
-            pairs_for_lines.append(pts_pairs)
-    return pairs_for_lines
+    vis = np.concatenate((img1_vis, img2_vis), axis=1)
+    # cv2.imshow('image', vis)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    cv2.imwrite('./out_imgs/left.png', vis)
+
+    img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+    img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+
+    for r, pt_x, pt_xp in zip(lp, x.T, xp.T):
+        color = tuple(np.random.randint(0, 255, 3).tolist())
+        x0, y0 = map(int, [0, -r[2]/r[1]])
+        x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[1]])
+        img2_vis = cv2.line(img2_vis, (x0,y0), (x1,y1), color, 1)
+        img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
+        img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
+
+    vis = np.concatenate((img1_vis, img2_vis), axis=1)
+    # cv2.imshow('image', vis)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    cv2.imwrite('./out_imgs/right.png', vis)
 
 def find_second_camera_mat(K1, K2, F):
     """ Given K1, K2, and F, one can obtain essential matrix E
@@ -288,16 +298,16 @@ def find_second_camera_mat(K1, K2, F):
     E = np.dot(np.dot(K1.T, F), K2)
     U, S, V = np.linalg.svd(E)
     m = (S[0]+S[1])/2
-    E = np.dot(np.dot(U, np.diag((m,m,0))), V)
+    # E = np.dot(np.dot(U, np.diag((m,m,0))), V)
     U, S, V = np.linalg.svd(E)
     W = np.array([[0, -1, 0],
                   [1,  0, 0],
                   [0,  0, 1]], dtype=float)
     u3 = U[:,2]
-    P2_1 = np.c_[np.dot(np.dot(U, W),   V),  u3]
-    P2_2 = np.c_[np.dot(np.dot(U, W),   V), -u3]
-    P2_3 = np.c_[np.dot(np.dot(U, W.T), V),  u3]
-    P2_4 = np.c_[np.dot(np.dot(U, W.T), V), -u3]
+    P2_1 = np.c_[np.dot(np.dot(U, W),   V.T),  u3]
+    P2_2 = np.c_[np.dot(np.dot(U, W),   V.T), -u3]
+    P2_3 = np.c_[np.dot(np.dot(U, W.T), V.T),  u3]
+    P2_4 = np.c_[np.dot(np.dot(U, W.T), V.T), -u3]
     return P2_1, P2_2, P2_3, P2_4
 
 def triangulation(P2, x, xp):
@@ -347,6 +357,46 @@ def triangulation(P2, x, xp):
     all_X = all_X[:,:3].T
     return all_X
 
+def check_in_front_camera(_3dpoints, P):
+    """ Find out how many points in front of camera
+        camera center -R.T t
+    """
+    C = np.dot(P[:,0:3], P[:,3].T)
+    count = 0
+    for X in range(_3dpoints.shape[1]):
+        if np.dot((X - C), P[:,2].T) > 0:
+            count+=1
+    return count
+
+def plot3d(_3dpoints):
+    """ Plot the reconstructed 3D points
+    Args:
+        _3dpoints - 3xN array
+    Reture:
+        a 3d scatter plot
+    """
+    # check dimensions
+    # 3d scatter plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(_3dpoints[0,:], _3dpoints[1,:], _3dpoints[2,:], c='b')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.show()
+
+def write_data(_3dpts, _2dpts, file_index):
+    """ write data as csv
+    """
+    _3dpts_writer = csv.writer(open('./out_data/task1-3dp'+ str(file_index) + '.csv', 'w'))
+    for i in range(_3dpts.shape[1]):
+        _3dpts_writer.writerow([_3dpts[0,i], _3dpts[1,i], _3dpts[2,i]])
+    
+    _2dpts_writer = csv.writer(open('./out_data/task1-2dp'+ str(file_index) + '.csv', 'w'))
+    for i in range(_2dpts.shape[1]):
+        _2dpts_writer.writerow([_2dpts[0,i], _2dpts[1,i]])
 
 # read images (can be a function)
 img1 = cv2.imread('./homework3/Mesona1.JPG',0)  #queryimage # left image
@@ -364,116 +414,59 @@ h_x = h_x.T
 h_xp = h_xp.T
 
 # step 2: estimate fundamental matrix with RANSAC
-F, inliers = RANSAC(h_x, h_xp, n=8, iters=3000, thres=3000, d=50, debug=False)
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=3000, thres=5000, d=50, debug=False)
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
 
-
+# test with opencv function call result
 # F =np.array([[ 2.58173099e-07,  2.44148171e-06, -2.80218167e-03],
 #  [-3.32347826e-06,  2.49053033e-07,  1.86535709e-02],
 #  [ 1.53615022e-03, -1.76135226e-02,  1.00000000e+00]])
 # inliers_x = h_x
 # inliers_xp = h_xp
 
-
-print(len(inliers)/h_x.shape[1])
-print(len(inliers))
-print(F)
-
 # step 3: draw the interest points and the corresponding epipolar lines
-# F * xp is the epipolar line associated with x (l = F * xp)
-# l = prepare_epilines(F, inliers_xp, h, w)
-# F.T * x is the epipolar line associated with xp (lp = F.T * x)
-# lp = prepare_epilines(F.T, inliers_x, h, w)
-
-###### try this
 # l = F.T * xp
-
-h, w = img1.shape
-lines_on_img1 = np.dot(F, inliers_xp).T
-# print(lines_on_img1)
+lines_on_img1 = np.dot(F.T, inliers_xp).T
 # l' = F * x
 lines_on_img2 = np.dot(F, inliers_x).T
-
-img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
-img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
-
-for r, pt_x, pt_xp in zip(lines_on_img1, inliers_x.T, inliers_xp.T):
-    color = tuple(np.random.randint(0, 255, 3).tolist())
-    x0, y0 = map(int, [0, -r[2]/r[1]])
-    x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[0]])
-    img1_vis = cv2.line(img1_vis, (y0,x0), (y1,x1), color, 1)
-    img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
-    img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
-
-vis = np.concatenate((img1_vis, img2_vis), axis=1)
-cv2.imshow('image', vis)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-cv2.imwrite('./out_imgs/1.png', vis)
-
-img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
-img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
-
-for r, pt_x, pt_xp in zip(lines_on_img2, inliers_x.T, inliers_xp.T):
-    color = tuple(np.random.randint(0, 255, 3).tolist())
-    x0, y0 = map(int, [0, -r[2]/r[1]])
-    x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[1]])
-    img2_vis = cv2.line(img2_vis, (x0,y0), (x1,y1), color, 1)
-    img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
-    img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
-
-vis = np.concatenate((img1_vis, img2_vis), axis=1)
-cv2.imshow('image', vis)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-cv2.imwrite('./out_imgs/2.png', vis)
+draw_epilines(lines_on_img1, lines_on_img2, inliers_x, inliers_xp, img1, img2)
 
 # step 4: get 4 possible solutions of essential matrix from fundamental matrix
 # the given intrinsic parameters provided in hw3
-
 K = np.array([[1.4219, 0.0005, 0.5092],
               [0, 1.4219, 0.3802],
               [0, 0, 0.0010]], dtype=float)
 
 P2_1, P2_2, P2_3, P2_4 = find_second_camera_mat(K, K, F)
 
-# step 5: find out most appropriate answer
-# step 6: triangulation to get 3D points of each P2
-
+# step 5: triangulation to get 3D points of each P2
 all_3dpoints_1 = triangulation(P2_1, inliers_x, inliers_xp)
 all_3dpoints_2 = triangulation(P2_2, inliers_x, inliers_xp)
 all_3dpoints_3 = triangulation(P2_3, inliers_x, inliers_xp)
 all_3dpoints_4 = triangulation(P2_4, inliers_x, inliers_xp)
 
-# check in front of camera?
+# step 6: find out most appropriate answer
+counts = []
+counts.append(check_in_front_camera(all_3dpoints_1, P2_1))
+counts.append(check_in_front_camera(all_3dpoints_2, P2_2))
+counts.append(check_in_front_camera(all_3dpoints_3, P2_3))
+counts.append(check_in_front_camera(all_3dpoints_4, P2_4))
+final = np.argmax(counts)
 
-
-# write data as csv
-import csv
-_3dpts_writer = csv.writer(open('./out_data/task1-3dp.csv', 'w'))
-for i in range(all_3dpoints_1.shape[1]):
-    _3dpts_writer.writerow([all_3dpoints_1[0,i], all_3dpoints_1[1,i], all_3dpoints_1[2,i]])
-_2dpts_writer = csv.writer(open('./out_data/task1-2dp.csv', 'w'))
-for i in range(inliers_x.shape[1]):
-    _2dpts_writer.writerow([inliers_x[0,i], inliers_x[1,i]])
-
-
-def plot3d(_3dpoints):
-    # check dimensions
-    # 3d scatter plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    ax.scatter(_3dpoints[0,:], _3dpoints[1,:], _3dpoints[2,:], c='b')
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-
-    plt.show()
-
-plot3d(all_3dpoints_1)
-plot3d(all_3dpoints_2)
-plot3d(all_3dpoints_3)
-plot3d(all_3dpoints_4)
+if final == 1:
+    print("The first P was selected")
+    plot3d(all_3dpoints_1)
+    write_data(all_3dpoints_1, inliers_xp, 'mesona')
+elif final == 2:
+    print("The second P was selected")
+    plot3d(all_3dpoints_2)
+    write_data(all_3dpoints_2, inliers_xp, 'mesona')
+elif final == 3:
+    print("The third P was selected")
+    plot3d(all_3dpoints_3)
+    write_data(all_3dpoints_3, inliers_xp, 'mesona')
+else:
+    print("The fourth P was selected")
+    plot3d(all_3dpoints_4)
+    write_data(all_3dpoints_3, inliers_xp, 'mesona')
