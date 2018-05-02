@@ -41,7 +41,7 @@ def find_matches(img1, img2):
 
     # ratio test as per Lowe's paper
     for i, (m, n) in enumerate(matches):
-        if m.distance < 0.7 * n.distance:
+        if m.distance < 0.8 * n.distance:
             good.append(m)
             x.append(kp1[m.queryIdx].pt)
             xp.append(kp2[m.trainIdx].pt)
@@ -259,7 +259,7 @@ def draw_epilines(l, lp, x, xp, img1, img2):
     # cv2.imshow('image', vis)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-    cv2.imwrite('./out_imgs/left.png', vis)
+    cv2.imwrite('./out_imgs/left-mesona.png', vis)
 
     img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
     img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
@@ -276,7 +276,7 @@ def draw_epilines(l, lp, x, xp, img1, img2):
     # cv2.imshow('image', vis)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-    cv2.imwrite('./out_imgs/right.png', vis)
+    cv2.imwrite('./out_imgs/right-mesona.png', vis)
 
 def find_second_camera_mat(K1, K2, F):
     """ Given K1, K2, and F, one can obtain essential matrix E
@@ -403,7 +403,6 @@ img1 = cv2.imread('./homework3/Mesona1.JPG',0)  #queryimage # left image
 img2 = cv2.imread('./homework3/Mesona2.JPG',0)  #trainimage # right image
 
 # step 1: Find out correspondence across images
-
 x, xp = find_matches(img1, img2)
 # turn feature points x and xp into homogeneous coordinates (can be a function)
 h_x = np.ones( (x.shape[0], 3), dtype=float)
@@ -414,7 +413,7 @@ h_x = h_x.T
 h_xp = h_xp.T
 
 # step 2: estimate fundamental matrix with RANSAC
-F, inliers = RANSAC(h_x, h_xp, n=8, iters=3000, thres=5000, d=50, debug=False)
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=3000, thres=10000, d=100, debug=False)
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
 
@@ -457,16 +456,16 @@ final = np.argmax(counts)
 if final == 1:
     print("The first P was selected")
     plot3d(all_3dpoints_1)
-    write_data(all_3dpoints_1, inliers_xp, 'mesona')
+    write_data(all_3dpoints_1, inliers_xp, '-mesona')
 elif final == 2:
     print("The second P was selected")
     plot3d(all_3dpoints_2)
-    write_data(all_3dpoints_2, inliers_xp, 'mesona')
+    write_data(all_3dpoints_2, inliers_xp, '-mesona')
 elif final == 3:
     print("The third P was selected")
     plot3d(all_3dpoints_3)
-    write_data(all_3dpoints_3, inliers_xp, 'mesona')
+    write_data(all_3dpoints_3, inliers_xp, '-mesona')
 else:
     print("The fourth P was selected")
     plot3d(all_3dpoints_4)
-    write_data(all_3dpoints_3, inliers_xp, 'mesona')
+    write_data(all_3dpoints_3, inliers_xp, '-mesona')

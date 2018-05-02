@@ -3,16 +3,20 @@
 % csvRange:[x�_�I,y�_�I,x���I,y���I]
 
 filename = 'matrixtest.csv';
-pts3d = csvread('../'
-pts2d = csvread('../out_data/task1-2dp.csv');  %�N matrixtest.csv �����eŪ��x�} pts
-points3D = pts(:,1:3); % pts(:,i:j)�����x�}pts����i��j�C
-points2D = pts(:,4:5);
-disp(points3D); %�bcommand window��ܵ��G
-CameraMatrix = [1.4219 0.0005 0.5092;0 1.4219 0.3802;0 0 0.0010];  %�O�� K ��?
+%pts3d = csvread('../out_data/task1-3dp-mesona.csv');
+pts2d = csvread('../out_data/task1-2dp-mesona.csv');  %�N matrixtest.csv �����eŪ��x�} pts
+pts3d = csvread('../out_data/task1-3dp-mesona.csv');
+pts2d = csvread('../out_data/task1-2dp-mesona.csv');  %�N matrixtest.csv �����eŪ��x�} pts
+
+
+%points3D = pts(:,1:3); % pts(:,i:j)�����x�}pts����i��j�C
+%points2D = pts(:,4:5);
+%disp(points3D); %�bcommand window��ܵ��G
+CameraMatrix = [1 0 0 0;0 1 0 0;0 0 1 0];  %�O�� K ��?
 tex_name = 'Mesona1.JPG';
 im_index = 1;
 
-obj_main(points3D,points2D,CameraMatrix,tex_name,im_index);
+obj_main(pts3d,pts2d,CameraMatrix,tex_name,im_index);
 
 function obj_main(P,p_img2,M,tex_name,im_index)
 %        obj_main(3dPoints, 2dPoints, CameraMatrix, ��Mesona1.JPG��, 1)
