@@ -60,10 +60,13 @@ pts2 = pts2[mask.ravel()==1]
 
 # Find epilines corresponding to points in right image (second image) and
 # drawing its lines on left image
+# F = np.array([[1.45363881e-06,  5.19353473e-07, -1.35661193e-03],
+#  [ 4.59644011e-08, -1.69584626e-07 , 5.85584718e-05],
+#  [-1.01362217e-03 ,-4.61211924e-04,  1.00000000e+00]])
 lines1 = cv2.computeCorrespondEpilines(pts2.reshape(-1,1,2), 2,F)
-print(pts1)
-print(pts2)
-print(lines1)
+# print(pts1)
+# print(pts2)
+# print(lines1)
 
 lines1 = lines1.reshape(-1,3)
 img5,img6 = drawlines(img1,img2,lines1,pts1,pts2)

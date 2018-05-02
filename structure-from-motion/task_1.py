@@ -64,17 +64,21 @@ def normalize_2d_pts(pts):
         raise ShapeError('Input point array must be 3xN')
 
     # precondition
-    finiteind = abs(pts[2]) > np.finfo(float).eps
-    pts[0, finiteind] = pts[0, finiteind]/pts[2, finiteind]
-    pts[1, finiteind] = pts[1, finiteind]/pts[2, finiteind]
-    pts[2, finiteind] = 1
+    # finiteind = abs(pts[2]) > np.finfo(float).eps
+    # pts[0, finiteind] = pts[0, finiteind]/pts[2, finiteind]
+    # pts[1, finiteind] = pts[1, finiteind]/pts[2, finiteind]
+    # pts[2, finiteind] = 1
+
+    pts[0, :] = pts[0, :]/pts[2, :]
+    pts[1, :] = pts[1, :]/pts[2, :]
+    pts[2, :] = 1
 
     # Centroid of finite points
-    c = [np.mean(pts[0, finiteind]), np.mean(pts[1, finiteind])]
+    c = [np.mean(pts[0, :]), np.mean(pts[1, :])]
 
     # Shift origin to centrold
-    new_pts_0 = pts[0, finiteind] - c[0]
-    new_pts_1 = pts[1, finiteind] - c[1]
+    new_pts_0 = pts[0, :] - c[0]
+    new_pts_1 = pts[1, :] - c[1]
 
     mean_dist = np.mean(np.sqrt(new_pts_0**2 + new_pts_1**2))
 
@@ -102,6 +106,13 @@ def constraint_matrix(x1, x2):
         A - a matrix Af=0 for SVD
     """
     npts = x1.shape[1]
+
+    # A = np.zeros((npts,9))
+    # for i in range(npts):
+    #     A[i] = [x1[0,i]*x2[0,i], x1[0,i]*x2[1,i], x1[0,i]*x2[2,i],
+    #             x1[1,i]*x2[0,i], x1[1,i]*x2[1,i], x1[1,i]*x2[2,i],
+    #             x1[2,i]*x2[0,i], x1[2,i]*x2[1,i], x1[2,i]*x2[2,i] ]
+
     # np.c_ concatenation along the 2nd axis, which is column
     A = np.c_[x2[0]*x1[0], x2[0]*x1[1], x2[0],
               x2[1]*x1[0], x2[1]*x1[1], x2[1],
@@ -128,7 +139,7 @@ def eight_point_algorithm(x1, x2):
     # 2. Resolve det(F) = 0 constraint using SVD. Fundamental matrix should be rank 2
     U, D, V = np.linalg.svd(F)
     D[2] = 0
-    F = np.dot(np.dot(U, np.diag(D)), V.T)
+    F = np.dot(np.dot(U, np.diag(D)), V)
 
     # 3. denormalize F = T2.T * F(normalized) * T1
     F = np.dot(np.dot(T2.T, F), T1)
@@ -148,6 +159,16 @@ def random_partition(n,n_data):
     idxs1 = all_idxs[:n]
     idxs2 = all_idxs[n:]
     return idxs1, idxs2
+
+def get_error(x1, x2, F):
+    """ compute error of x F xp 
+    """
+    Fx1 = np.dot(F, x1)
+    Fx2 = np.dot(F, x2)
+    denom = Fx1[0]**2 + Fx1[1]**2 + Fx2[0]**2 + Fx2[1]**2
+    test_err = (np.diag(np.dot(np.dot(x1.T, F), x2)))**2 / denom
+    return test_err
+
 
 def RANSAC(x1, x2, n, iters, thres, d, debug=False):
     """ Find fundamental matrix with RANSAC
@@ -174,9 +195,19 @@ def RANSAC(x1, x2, n, iters, thres, d, debug=False):
         maybe_inliers_x2 = x2[:, maybe_idxs]
         test_points_x1 = x1[:, test_idxs]
         test_points_x2 = x2[:, test_idxs]
+        maybe_F, _ = cv2.findFundamentalMat(maybe_inliers_x1.T, maybe_inliers_x2.T, cv2.FM_LMEDS)
+        # maybe_F = eight_point_algorithm(maybe_inliers_x1, maybe_inliers_x2)
+        # print(test_points_x1.shape, maybe_F.shape, test_points_x2.shape)
+        # test_err_0 = np.dot(np.dot(test_points_x1.T, maybe_F), test_points_x2) # axis=1 along row
+        # test_err = abs(np.sum( np.dot(np.dot(test_points_x2.T, maybe_F), test_points_x1), axis=1)) # axis=1 along row
+        # print(test_err_0.shape, test_err.shape)
+        
+        # Fx1 = np.dot(maybe_F, test_points_x1)
+        # Fx2 = np.dot(maybe_F, test_points_x2)
+        # denom = Fx1[0]**2 + Fx1[1]**2 + Fx2[0]**2 + Fx2[1]**2
+        # test_err = np.diag(test_err_0)**2 / denom
+        test_err = get_error(test_points_x1, test_points_x2, maybe_F)
 
-        maybe_F = eight_point_algorithm(maybe_inliers_x1, maybe_inliers_x2)
-        test_err = abs(np.sum( np.dot(np.dot(test_points_x2.T, maybe_F), test_points_x1), axis=1)) # axis=1 along row
         also_idxs = test_idxs[test_err < thres]
         also_inliers_x1 = x1[:, also_idxs]
         also_inliers_x2 = x2[:, also_idxs]
@@ -189,8 +220,10 @@ def RANSAC(x1, x2, n, iters, thres, d, debug=False):
         if len(also_idxs) > d:
             better_x1 = np.concatenate((maybe_inliers_x1, also_inliers_x1), axis=1)
             better_x2 = np.concatenate((maybe_inliers_x2, also_inliers_x2), axis=1)
-            better_F = eight_point_algorithm(better_x1, better_x2)
-            better_errs = np.sum( np.dot(np.dot(better_x2.T, maybe_F), better_x1), axis=1) 
+            better_F, _ = cv2.findFundamentalMat(better_x1.T, better_x2.T, cv2.FM_LMEDS)
+            # better_F = eight_point_algorithm(better_x1, better_x2)
+            better_errs = get_error(better_x1, better_x2, better_F)
+            # better_errs = np.sum( np.dot(np.dot(better_x2.T, maybe_F), better_x1), axis=1) 
             this_err = np.mean(better_errs)
             if this_err < best_err:
                 best_F = better_F
@@ -331,10 +364,18 @@ h_x = h_x.T
 h_xp = h_xp.T
 
 # step 2: estimate fundamental matrix with RANSAC
-F, inliers = RANSAC(h_x, h_xp, n=8, iters=1000, thres=300, d=300)
+F, inliers = RANSAC(h_x, h_xp, n=8, iters=3000, thres=3000, d=50, debug=False)
 inliers_x = h_x[:, inliers]
 inliers_xp = h_xp[:, inliers]
-# F = eight_point_algorithm(inliers_x, inliers_xp)
+
+
+# F =np.array([[ 2.58173099e-07,  2.44148171e-06, -2.80218167e-03],
+#  [-3.32347826e-06,  2.49053033e-07,  1.86535709e-02],
+#  [ 1.53615022e-03, -1.76135226e-02,  1.00000000e+00]])
+# inliers_x = h_x
+# inliers_xp = h_xp
+
+
 print(len(inliers)/h_x.shape[1])
 print(len(inliers))
 print(F)
@@ -349,8 +390,8 @@ print(F)
 # l = F.T * xp
 
 h, w = img1.shape
-lines_on_img1 = np.dot(F.T, inliers_xp).T
-print(lines_on_img1)
+lines_on_img1 = np.dot(F, inliers_xp).T
+# print(lines_on_img1)
 # l' = F * x
 lines_on_img2 = np.dot(F, inliers_x).T
 
@@ -360,7 +401,7 @@ img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
 for r, pt_x, pt_xp in zip(lines_on_img1, inliers_x.T, inliers_xp.T):
     color = tuple(np.random.randint(0, 255, 3).tolist())
     x0, y0 = map(int, [0, -r[2]/r[1]])
-    x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[1]])
+    x1, y1 = map(int, [w, -(r[2]+r[0]*w)/r[0]])
     img1_vis = cv2.line(img1_vis, (y0,x0), (y1,x1), color, 1)
     img1_vis = cv2.circle(img1_vis, tuple((int(pt_x[0]), int(pt_x[1]))), 3, color, -1)
     img2_vis = cv2.circle(img2_vis, tuple((int(pt_xp[0]), int(pt_xp[1]))), 3, color, -1)
@@ -369,6 +410,7 @@ vis = np.concatenate((img1_vis, img2_vis), axis=1)
 cv2.imshow('image', vis)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+cv2.imwrite('./out_imgs/1.png', vis)
 
 img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
 img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
@@ -385,59 +427,7 @@ vis = np.concatenate((img1_vis, img2_vis), axis=1)
 cv2.imshow('image', vis)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-
-
-# l = prepare_epilines(F.T, inliers_xp, h, w)
-
-# l' = Fx
-# lp = prepare_epilines(F, inliers_x, h, w)
-# print(len(l), len(lp))
-
-
-# draw interest points and their corresponding epipolar lines
-# img1_vis = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
-# img2_vis = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
-# # kp on img1, epi lines on img2
-# kp_to_draw_x = []
-# kp_to_draw_xp = []
-
-# draw key points
-# for i in range(inliers_x.shape[1]):
-#     kp_to_draw_x.append((int(inliers_x[0, i]), int(inliers_x[1, i])))
-#     kp_to_draw_xp.append((int(inliers_xp[0,i]), int(inliers_xp[1,i])))
-
-# for i in range(len(kp_to_draw_x)):
-#     img1_vis = cv2.circle(img1_vis, kp_to_draw_x[i], radius=3, color=(255,0,0), thickness=-1)
-#     img2_vis = cv2.circle(img2_vis, kp_to_draw_xp[i], radius=3, color=(255,0,0),thickness=-1)
-
-# for i in range(len(l)):
-#      img1_vis = cv2.line(img1_vis, l[i][0], l[i][1], (255, 0, 0), 1)
-#      img2_vis = cv2.line(img2_vis, lp[i][0], lp[i][1], (255, 0, 0), 1)
-
-# vis = np.concatenate((img1_vis, img2_vis), axis=1)
-# cv2.imshow('image', vis)
-# cv2.imwrite('./out_imgs/kp_and_epipolar.png', vis)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-"""
-def drawlines(img1,img2,lines,pts1,pts2):
-    ''' img1 - image on which we draw the epilines for the points in img2
-        lines - corresponding epilines '''
-    r,c = img1.shape
-    img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
-    img2 = cv2.cvtColor(img2,cv2.COLOR_GRAY2BGR)
-    for r,pt1,pt2 in zip(lines,pts1,pts2):
-        color = tuple(np.random.randint(0,255,3).tolist())
-        x0,y0 = map(int, [0, -r[2]/r[1] ])
-        x1,y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
-        img1 = cv2.line(img1, (x0,y0), (x1,y1), color,1)
-        img1 = cv2.circle(img1,tuple(pt1),5,color,-1)
-        img2 = cv2.circle(img2,tuple(pt2),5,color,-1)
-    return img1,img2
-
-"""
+cv2.imwrite('./out_imgs/2.png', vis)
 
 # step 4: get 4 possible solutions of essential matrix from fundamental matrix
 # the given intrinsic parameters provided in hw3
@@ -455,7 +445,18 @@ all_3dpoints_1 = triangulation(P2_1, inliers_x, inliers_xp)
 all_3dpoints_2 = triangulation(P2_2, inliers_x, inliers_xp)
 all_3dpoints_3 = triangulation(P2_3, inliers_x, inliers_xp)
 all_3dpoints_4 = triangulation(P2_4, inliers_x, inliers_xp)
-# print(all_3dpoints_1.shape)
+
+# check in front of camera?
+
+
+# write data as csv
+import csv
+_3dpts_writer = csv.writer(open('./out_data/task1-3dp.csv', 'w'))
+for i in range(all_3dpoints_1.shape[1]):
+    _3dpts_writer.writerow([all_3dpoints_1[0,i], all_3dpoints_1[1,i], all_3dpoints_1[2,i]])
+_2dpts_writer = csv.writer(open('./out_data/task1-2dp.csv', 'w'))
+for i in range(inliers_x.shape[1]):
+    _2dpts_writer.writerow([inliers_x[0,i], inliers_x[1,i]])
 
 
 def plot3d(_3dpoints):
