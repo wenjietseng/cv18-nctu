@@ -390,11 +390,11 @@ def plot3d(_3dpoints):
 def write_data(_3dpts, _2dpts, file_index):
     """ write data as csv
     """
-    _3dpts_writer = csv.writer(open('./out_data/task2-3dp'+ str(file_index) + '.csv', 'w'))
+    _3dpts_writer = csv.writer(open('./out_3dpts/task2-3dp-'+ str(file_index) + '.csv', 'w'))
     for i in range(_3dpts.shape[1]):
         _3dpts_writer.writerow([_3dpts[0,i], _3dpts[1,i], _3dpts[2,i]])
     
-    _2dpts_writer = csv.writer(open('./out_data/task2-2dp'+ str(file_index) + '.csv', 'w'))
+    _2dpts_writer = csv.writer(open('./out_3dpts/task2-2dp-'+ str(file_index) + '.csv', 'w'))
     for i in range(_2dpts.shape[1]):
         _2dpts_writer.writerow([_2dpts[0,i], _2dpts[1,i]])
 
