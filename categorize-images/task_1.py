@@ -9,7 +9,7 @@
 import numpy as np
 import cv2
 import os, sys
-
+from sklearn.neighbors import KNeighborsClassifier
 
 # Read Data
 train_path = "./hw4_data/train/"
@@ -41,6 +41,13 @@ print("Number of testing images: %d " % len(test_img_list))
 
 
 
+# resize to 16 x 16
+resized_imgs = [cv2.resize(img, (16, 16), interpolation=cv2.INTER_CUBIC) for img in train_img_list]
+print(resized_imgs[0])
 
+# flat
+# scikit: knn, cross validation
+
+# visualization, confusion matrix
 
 # https://github.com/bikz05/bag-of-words
