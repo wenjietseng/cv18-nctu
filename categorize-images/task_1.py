@@ -43,7 +43,7 @@ print("Number of testing images: %d " % len(test_img_list))
 
 # resize to 16 x 16
 resized_imgs = [cv2.resize(img, (16, 16), interpolation=cv2.INTER_CUBIC) for img in train_img_list]
-print(resized_imgs[0])
+
 
 # flat
 # scikit: knn, cross validation
