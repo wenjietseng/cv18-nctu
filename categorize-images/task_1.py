@@ -4,6 +4,8 @@
       the center square portion out of each image.
     - The entire image is just a vector of 16*16 = 256 dimensions.
     - Nearest neighbor classifier
+    - KNN + Cross Validation
+    - Confusion matrix visualization result
 """
 import numpy as np
 import cv2
