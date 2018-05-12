@@ -1,8 +1,4 @@
 """ Task 2: Bag of SIFT representation wtih NN
-    - resizes each image to a small, fixed resolution (16*16). (see task_1.py)
-    - You can either resize the images to square while ignoring their aspect ratio
-      or you can crop the center square portion out of each image. (I ignore this part)
-    - The entire image is just a vector of 16*16 = 256 dimensions.
     - use cv2 to find SIFT feature descriptors, which should be Nx128 (N is the number of features detected)
     - Vector Quantization:
         Do K-means clustering to turn descriptors into groups
