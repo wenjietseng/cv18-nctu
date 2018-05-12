@@ -80,6 +80,10 @@ Xtr = np.asarray([img.flatten() for img in resized_imgs], dtype=float)
 resized_imgs = [cv2.resize(img, (16, 16), interpolation=cv2.INTER_CUBIC) for img in test_img_list]
 Xte = np.asarray([img.flatten() for img in resized_imgs], dtype=float)
 
+# crop at center
+# https://stackoverflow.com/questions/39382412/crop-center-portion-of-a-numpy-image
+#
+
 # labels
 label_dict = {}
 for i, c in enumerate(img_dirs):
