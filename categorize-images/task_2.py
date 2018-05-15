@@ -80,7 +80,7 @@ def bagOfSIFT(train_img_list, test_img_list):
 
     # Do k-means clustering
     # Initiate KMeans
-    clt = cluster.KMeans(n_clusters = 4, random_state = 0)
+    clt = cluster.KMeans(n_clusters = 8, random_state = 0)
 
     # Cluster the histograms
     train_hist = []
@@ -147,8 +147,8 @@ img_dirs, train_img_list, test_img_list = dataRead()
 # Find descriptors and cluster. Returned in np array form
 train_hist, test_hist = bagOfSIFT(train_img_list, test_img_list)
 
-# print(train_hist)
-# print(test_hist)
+print(train_hist.shape)
+print(test_hist.shape)
 
 # Create lable dictionary
 label_dict = {}
