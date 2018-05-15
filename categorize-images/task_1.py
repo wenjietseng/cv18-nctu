@@ -170,7 +170,7 @@ plt.savefig('./task_1_out/knn-cv.png', bbox_inches='tight', dpi=300)
 knn = KNeighborsClassifier(n_neighbors=best_k)
 knn.fit(Xtr, Ytr)
 knn_pred = knn.predict(Xte)
-print(knn_pred)
+# print(knn_pred)
 print('KNN acc (K = %d): %f' % (best_k, accuracy_score(Yte, knn_pred)))
 
 # confusion mat
