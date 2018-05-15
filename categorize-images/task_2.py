@@ -27,63 +27,44 @@ def clusterToHistogram(clt):
 # Function used to read data
 def dataRead():
     # Path to train data
-    # train_path = "./hw4_data/train/"
-    train_path = "./hw4_data/train/Bedroom"
+    train_path = "./hw4_data/train/"
     train_img_list = []
 
     # Read the folder names
-    # img_dirs = [d for d in os.listdir(train_path) if not d.startswith('.')]
+    img_dirs = [d for d in os.listdir(train_path) if not d.startswith('.')]
 
-    # Read all the file names in folders, one folder by one folder
-    # img_names = [os.listdir(train_path + d) for d in img_dirs if not d.startswith('.')]
-    img_names = [n for n in os.listdir(train_path) if not n.startswith('.')]
+    # Read all the file names in folders, one folder by one folder0
+    img_names = [os.listdir(train_path + d) for d in img_dirs if not d.startswith('.')]
 
     # Read all the images
-    # for d_idx in range(len(img_names)):
-    #     for name in img_names[d_idx]:
-    #         if not name.startswith('.'):
-    #             img = cv2.imread(train_path + img_dirs[d_idx] + '/' + name, 0)
-    #             train_img_list.append(img)
-    
-    for d_idx in range(len(img_names)):
-        name = img_names[d_idx]
-        if not name.startswith('.'):
-            img = cv2.imread(train_path + '/' + name, 0)
-            train_img_list.append(img)
-    
+    for d_idx in range(2):
+        for name in img_names[d_idx]:
+            if not name.startswith('.'):
+                img = cv2.imread(train_path + img_dirs[d_idx] + '/' + name, 0)
+                train_img_list.append(img)
+   
     # Print out the number of training images
     # print("Number of training images: %d " % len(train_img_list))
 
     # Path to test data
-    # train_path = "./hw4_data/test/"
-    test_path = "./hw4_data/test/Bedroom"
+    test_path = "./hw4_data/test/"
     test_img_list = []
 
-    # Read the folder names
-    # img_dirs = [d for d in os.listdir(test_path) if not d.startswith('.')]
-
     # Read all the file names in folders, one folder by one folder
-    # img_names = [os.listdir(test_path + d) for d in img_dirs if not d.startswith('.')]
-    img_names = [n for n in os.listdir(test_path) if not n.startswith('.')]
+    img_names = [os.listdir(test_path + d) for d in img_dirs if not d.startswith('.')]
 
     # Read all the images
-    # for d_idx in range(len(img_names)):
-    #     for name in img_names[d_idx]:
-    #         if not name.startswith('.'):
-    #             img = cv2.imread(test_path + img_dirs[d_idx] + '/' + name, 0)
-    #             test_img_list.append(img)
-    
-    for d_idx in range(len(img_names)):
-        name = img_names[d_idx]
-        if not name.startswith('.'):
-            img = cv2.imread(test_path + '/' + name, 0)
-            test_img_list.append(img)
+    for d_idx in range(2):
+        for name in img_names[d_idx]:
+            if not name.startswith('.'):
+                img = cv2.imread(test_path + img_dirs[d_idx] + '/' + name, 0)
+                test_img_list.append(img)
     
     # Print out the number of training images
     # print("Number of training images: %d " % len(train_img_list))
 
     # Return data
-    return train_img_list, test_img_list
+    return img_dirs, train_img_list, test_img_list
 
 # Generate bags of SIFT descriptors
 def bagOfSIFT(train_img_list, test_img_list):
@@ -124,13 +105,28 @@ def bagOfSIFT(train_img_list, test_img_list):
         # Transform the clustered result into histogram
         test_hist.append(clusterToHistogram(clt))
 
-    # Return histograms
-    return train_hist, test_hist
+    # Return histograms as np array
+    return np.asarray(train_hist), np.asarray(test_hist)
 
 # Read in all data
-train_img_list, test_img_list = dataRead()
+img_dirs, train_img_list, test_img_list = dataRead()
+
+# Find descriptors and cluster. Returned in np array form
 train_hist, test_hist = bagOfSIFT(train_img_list, test_img_list)
+
+print(train_hist.shape)
+print(test_hist.shape)
+
+
+# Create lable dictionary
+label_dict = {}
+for idx, label in enumerate(img_dirs):
+     label_dict[idx] = label
+
+# Create Y results
+train_Y = np.repeat(np.arange(2), 100)
+test_Y = np.repeat(np.arange(2), 10)
     
 # Show the histogram
-print(len(train_hist))
-print(len(test_hist))
+# print(len(train_hist))
+# print(len(test_hist))
