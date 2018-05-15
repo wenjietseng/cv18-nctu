@@ -12,6 +12,26 @@ import cv2
 import os, sys
 from matplotlib import pyplot as plt
 
+def crop_center(img):
+    """ Crop the input image at center, the new size is the smaller one of original size
+    Args:
+        img - input image
+    Return:
+        a square size image which was cropped at center
+    ref: https://stackoverflow.com/questions/39382412/crop-center-portion-of-a-numpy-image
+    """
+    h, w = img.shape
+    if h > w:
+        target_size = w
+    elif h < w:
+        target_size = h
+    else:
+        return img
+    
+    start_x = w//2 - (target_size//2)
+    start_y = h//2 - (target_size//2)
+    return img[start_y:start_y+target_size, start_x:start_x+target_size]
+
 class NearestNeighbor(object):
     def __init__(self):
         pass
@@ -74,17 +94,18 @@ for d_idx in range(len(img_names)):
 print("Number of testing images: %d " % len(test_img_list))
 
 # --- Preparing Data ---
+# crop at center
+crop_train_imgs = map(crop_center, train_img_list)
+crop_test_imgs = map(crop_center, test_img_list)
+
 # resize to 16 x 16 and flatten
 resized_imgs = [cv2.resize(img, (16, 16), interpolation=cv2.INTER_CUBIC) for img in train_img_list]
 Xtr = np.asarray([img.flatten() for img in resized_imgs], dtype=float)
+
 resized_imgs = [cv2.resize(img, (16, 16), interpolation=cv2.INTER_CUBIC) for img in test_img_list]
 Xte = np.asarray([img.flatten() for img in resized_imgs], dtype=float)
 
-# crop at center
-# https://stackoverflow.com/questions/39382412/crop-center-portion-of-a-numpy-image
-#
-
-# labels
+# # labels
 label_dict = {}
 for i, c in enumerate(img_dirs):
     label_dict[i] = c
@@ -105,17 +126,13 @@ from sklearn.metrics import confusion_matrix
 con_mat_L1 = confusion_matrix(Yte, Yte_predict_L1)
 con_mat_L2 = confusion_matrix(Yte, Yte_predict_L2)
 
-from plot_confusion_matrix import plot_confusion_matrix
 # Plot non-normalized confusion matrix
-# plt.figure()
-# plot_confusion_matrix(con_mat_L1, classes=img_dirs,
-                    #   title='Confusion matrix, without normalization')
-
-# Plot normalized confusion matrix
-# plt.figure()
-# plot_confusion_matrix(con_mat_L1, classes=img_dirs, normalize=True,
-                    #   title='Normalized confusion matrix')
-# plt.show()
+from plot_confusion_matrix import plot_confusion_matrix
+plt.figure()
+plot_confusion_matrix(con_mat_L1, classes=img_dirs,
+                      title='Confusion matrix, NN')
+plt.savefig('./task_1_out/confustion_mat_nn.png', bbox_inches='tight', dpi=300)
+plt.close()
 
 # --- KNN + cross validation ---
 from sklearn.neighbors import KNeighborsClassifier
@@ -137,21 +154,29 @@ for k in neighbors:
     scores = cross_val_score(knn, Xtr, Ytr, cv=10, scoring='accuracy')
     cv_scores.append(scores.mean())
 
-# cv_scores acc plot with K
-# plt.figure()
-# plt.plot(np.arange(1, 50, step=2), cv_scores)
-# plt.show()
-
 best_k = np.argmax(cv_scores) * 2 + 1
+print('The best training acurracy of KNN (k=%d): %f' % (best_k, cv_scores[np.argmax(cv_scores)]))
+
+# cv_scores acc plot with K
+plt.figure()
+plt.plot(np.arange(1, 50, step=2), cv_scores, color='black')
+plt.axvline(x=best_k, linewidth=0.3, linestyle='--', color='firebrick')
+plt.ylim(0, .4)
+plt.xlabel('k from 1 to 49')
+plt.ylabel('Accuracy')
+plt.savefig('./task_1_out/knn-cv.png', bbox_inches='tight', dpi=300)
 
 # test error with cross validation k
-# instantiate learning model (k = 3)
 knn = KNeighborsClassifier(n_neighbors=best_k)
-# fitting the model
 knn.fit(Xtr, Ytr)
-# predict the response
 knn_pred = knn.predict(Xte)
-# evaluate accuracy
+# print(knn_pred)
 print('KNN acc (K = %d): %f' % (best_k, accuracy_score(Yte, knn_pred)))
 
-# https://github.com/bikz05/bag-of-words
+# confusion mat
+con_mat_knncv = confusion_matrix(Yte, knn_pred)
+plt.figure()
+plot_confusion_matrix(con_mat_knncv, classes=img_dirs,
+                      title='Confusion matrix KNN (k=%d)' % best_k)
+plt.savefig('./task_1_out/confustion_mat_knncv.png', bbox_inches='tight', dpi=300)
+plt.close()
