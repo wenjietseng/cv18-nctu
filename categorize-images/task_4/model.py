@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 class WJNet(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(WJNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 4, 4)
         self.pool1 = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(4, 16, 4)
