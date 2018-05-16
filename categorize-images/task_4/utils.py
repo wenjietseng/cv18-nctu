@@ -44,9 +44,10 @@ class ImageDataset(Dataset):
     
         img = Image.open(out_list[idx])
         label = labels[idx]
-        sample = {'image': img, 'label':label}
+        # sample = {'image': img, 'label':label}
 
         if self.transform:
-            sample['image'] = self.transform(sample['image'])
+            # sample['image'] = self.transform(sample['image'])
+            img = self.transform(img)
 
-        return sample
+        return (img, label)

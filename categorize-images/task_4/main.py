@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+from torch.autograd import Variable
 
 import torchvision
 import torchvision.transforms as transforms
@@ -55,14 +56,22 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma
 
 # 4. Training
 def train(epoch):
-    running_loss = 0.0
-    for i, data in enumerate(train_loader, 0):
-        # get the inputs
-        inputs, labels = data
+    print('\nEpoch: %d' % epoch)
+    net.train()
 
+    train_loss = 0.0
+    correct = 0
+    total = 0
+
+    for batch_idx, (inputs, labels) in enumerate(train_loader):
+
+        print(len(inputs))
+        print(len(labels))
+        print(labels)
         # zero the parameter gradients
         optimizer.zero_grad()
 
+        inputs, labels = Variable(inputs), Variable(labels)
         # forward + backward + optimize
         outputs = net(inputs)
         loss = criterion(outputs, labels)
@@ -70,10 +79,14 @@ def train(epoch):
         optimizer.step()
 
         # print statistics
-        running_loss += loss.item()
-        if i % 10 == 0:    # print every 2000 mini-batches
+        train_loss += loss.data[0]
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += predicted.eq(labels.data).cpu().sum()
+
+        if batch_idx % 9 == 0:    # print every 2000 mini-batches
             print('[%d, %5d] loss: %.5f' %
-                  (epoch + 1, i + 1, running_loss / 10))
+                  (epoch + 1, batch_idx + 1, train_loss / 10))
             running_loss = 0.0
 
 
