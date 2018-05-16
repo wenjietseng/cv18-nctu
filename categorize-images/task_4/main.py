@@ -53,10 +53,37 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma=0.1)
 
-# Repeat 100 epochs
-#   4. Training
+# 4. Training
+def train(epoch):
+    running_loss = 0.0
+    for i, data in enumerate(train_loader, 0):
+        # get the inputs
+        inputs, labels = data
 
-#   5. Testing with test data
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        # print statistics
+        running_loss += loss.item()
+        if i % 10 == 0:    # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.5f' %
+                  (epoch + 1, i + 1, running_loss / 10))
+            running_loss = 0.0
+
+
+# 5. Testing with test data
+def test(epoch):
+    pass
+
+# Repeat 100 epochs
+for epoch in range(80):
+    train(epoch)
+    test(epoch)
 
 # 6. Output results
-
