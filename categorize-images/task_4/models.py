@@ -18,9 +18,8 @@ class WJNet(nn.Module):
         x = F.relu(self.conv2(x))
         x = self.pool2(x)
         # flatten
+        # x = x.view(-1, self.num_flat_features(x))
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-net = WJNet()
-print(net)

@@ -105,6 +105,14 @@ Xtr = np.asarray([img.flatten() for img in resized_imgs], dtype=float)
 resized_imgs = [cv2.resize(img, (16, 16), interpolation=cv2.INTER_CUBIC) for img in test_img_list]
 Xte = np.asarray([img.flatten() for img in resized_imgs], dtype=float)
 
+# print(np.mean(Xtr, axis=0).shape)
+# print(np.std(Xtr, axis=0).shape)
+Xtr_normalized = (Xtr - np.mean(Xtr, axis=0)) / np.std(Xtr, axis=0)
+Xte_normalized = (Xte - np.mean(Xte, axis=0)) / np.std(Xte, axis=0)
+
+# print(np.mean(Xtr_normalized, axis=0))
+# print(np.std(Xtr_normalized, axis=0))
+
 # # labels
 label_dict = {}
 for i, c in enumerate(img_dirs):
@@ -120,6 +128,12 @@ Yte_predict_L1 = nn.predict(Xte, 'L1')
 print('L1 accuracy: %f' % (np.mean(Yte_predict_L1 == Yte)))
 Yte_predict_L2 = nn.predict(Xte, 'L2')
 print('L2 accuracy: %f' % (np.mean(Yte_predict_L2 == Yte)))
+
+nn.train(Xtr_normalized, Ytr)
+Yte_predict_L1 = nn.predict(Xte_normalized, 'L1')
+print('normalizd L1 accuracy: %f' % (np.mean(Yte_predict_L1 == Yte)))
+Yte_predict_L2 = nn.predict(Xte_normalized, 'L2')
+print('normalized L2 accuracy: %f' % (np.mean(Yte_predict_L2 == Yte)))
 
 # confusion matrix
 from sklearn.metrics import confusion_matrix
@@ -151,7 +165,7 @@ cv_scores = []
 from sklearn.cross_validation import cross_val_score
 for k in neighbors:
     knn = KNeighborsClassifier(n_neighbors=k)
-    scores = cross_val_score(knn, Xtr, Ytr, cv=10, scoring='accuracy')
+    scores = cross_val_score(knn, Xtr_normalized, Ytr, cv=10, scoring='accuracy')
     cv_scores.append(scores.mean())
 
 best_k = np.argmax(cv_scores) * 2 + 1
@@ -168,8 +182,8 @@ plt.savefig('./task_1_out/knn-cv.png', bbox_inches='tight', dpi=300)
 
 # test error with cross validation k
 knn = KNeighborsClassifier(n_neighbors=best_k)
-knn.fit(Xtr, Ytr)
-knn_pred = knn.predict(Xte)
+knn.fit(Xtr_normalized, Ytr)
+knn_pred = knn.predict(Xte_normalized)
 # print(knn_pred)
 print('KNN acc (K = %d): %f' % (best_k, accuracy_score(Yte, knn_pred)))
 
