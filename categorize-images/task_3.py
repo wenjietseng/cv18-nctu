@@ -155,11 +155,10 @@ test_Y = np.repeat(np.arange(15), 10)
 
 
 # SVM2
-x_train = train_hist
-y_train = train_Y
-x_test = test_hist
-y_test = test_Y
-
+# x_train = train_hist
+# y_train = train_Y
+# x_test = test_hist
+# y_test = test_Y
 # clf = svm.SVC(C=0.8, kernel='rbf', gamma=20, decision_function_shape='ovr')
 # clf.fit(x_train, y_train.ravel())
 # print(clf.score(x_train, y_train))
@@ -167,6 +166,8 @@ y_test = test_Y
 # print("clf.score:",clf.score)
 # predicted = clf.predict(x_test)
 # print("pre:",predicted)
+
+# SVM3
 X_train = train_hist
 y_train = train_Y
 X_test = test_hist
@@ -176,17 +177,22 @@ svc_model = svm.SVC(gamma=0.001, C=100, kernel='linear')
 svc_model.fit(X_train, y_train)
 predicted = svc_model.predict(X_test)
 
-
-from sklearn.metrics import accuracy_score
 # Print the classification report of `y_test` and `predicted`
-print("SVM accuracy: %r" % accuracy_score(predicted, y_test))
-
 # from sklearn import metrics
 # print(metrics.classification_report(y_test, predicted))
 
+from sklearn.metrics import accuracy_score
+print("SVM accuracy: %r" % accuracy_score(predicted, y_test))
 
 
-# SVM3
+# result:
+# (1500, 8)
+# (150, 8)
+# SVM accuracy: 0.14
+
+
+
+# SVM4
 # # -*- coding: utf-8 -*-
 # # @Time    : 2017/7/13 下午8:23
 # # @Author  : play4fun
