@@ -97,9 +97,9 @@ def train(epoch, writer):
 
         # if batch_idx % 10 == 0:    # print every 2000 mini-batches
         print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
-                (epoch + 1, batch_idx + 1, train_loss / (batch_idx+1), 100.0*float(correct.data[0])/float(total.data[0]), correct, total))
+                (epoch + 1, batch_idx + 1, train_loss / (batch_idx+1), 100.0*float(correct)/float(total), correct, total))
         if batch_idx == 46:
-            writer.writerow([epoch, (train_loss/(batch_idx+1)).item(), (100.*float(correct)/float(total)) ])
+            writer.writerow([epoch, (train_loss/(batch_idx+1)).item(), (100.*float(correct.data[0])/float(total)) ])
 
 # 5. Testing with test data
 def test(epoch, writer):
@@ -120,9 +120,9 @@ def test(epoch, writer):
         correct += predicted.eq(targets.data).cpu().sum()
 
         print('[%d, %5d] Loss: %.5f | Acc: %.3f%% (%d/%d)'
-            % (epoch+1, batch_idx+1, test_loss/(batch_idx+1), 100.*float(correct.data[0])/float(total.data[0]), correct, total))
+            % (epoch+1, batch_idx+1, test_loss/(batch_idx+1), 100.*float(correct)/float(total), correct, total))
         if batch_idx == 4:
-            writer.writerow([epoch, (test_loss/(batch_idx+1)).item(), (100.*float(correct)/float(total)) ])
+            writer.writerow([epoch, (test_loss/(batch_idx+1)).item(), (100.*float(correct.data[0])/float(total)) ])
 
 # Repeat 100 epochs
 for epoch in range(80):
