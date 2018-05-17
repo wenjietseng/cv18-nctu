@@ -24,8 +24,8 @@ from utils import *
 import torchvision.datasets as dset
 
 import csv 
-train_writer = csv.writer(open("./WJNet-train.csv", 'w'))
-test_writer = csv.writer(open("./WJNet-test.csv", 'w'))
+train_writer = csv.writer(open("./WJNet-train-dropout.csv", 'w'))
+test_writer = csv.writer(open("./WJNet-test.csv-dropout", 'w'))
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
 my_transforms = transforms.Compose([transforms.Grayscale(),
                                     transforms.CenterCrop(220),

@@ -31,8 +31,10 @@ class WJNet(nn.Module):
 
         # flatten
         x = x.view(-1, self.num_flat_features(x))
+        x = F.dropout(x, 0.5)
         # print(x.size())
         x = F.relu(self.fc1(x))
+        x = F.dropout(x, 0.5)
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
