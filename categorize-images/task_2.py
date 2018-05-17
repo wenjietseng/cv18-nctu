@@ -16,7 +16,9 @@ import scipy.cluster.vq
 from sklearn.metrics import confusion_matrix
 from plot_confusion_matrix import plot_confusion_matrix
 
-CLUSTERNUMBER = 20
+CLUSTER_START = 10
+CLUSTER_END = 101
+CLUSTER_STEP = 5
 
 # Function used to read data
 def dataRead():
@@ -61,7 +63,7 @@ def dataRead():
     return img_dirs, train_img_list, test_img_list
 
 # Generate bags of SIFT descriptors
-def bagOfSIFT(train_img_list, test_img_list):
+def bagOfSIFT(cluter_number_k, train_img_list, test_img_list):
     # Create extractor
     extractor = cv2.xfeatures2d.SIFT_create()
 
@@ -81,10 +83,10 @@ def bagOfSIFT(train_img_list, test_img_list):
 
     # Do k-means clustering
     # Generate train images' codebook
-    train_codebook, _ = scipy.cluster.vq.kmeans(train_descriptors, CLUSTERNUMBER, 1)
+    train_codebook, _ = scipy.cluster.vq.kmeans(train_descriptors, cluter_number_k, 1)
 
     # Assign descriptors to centroids and calculate the histogram
-    train_hist = np.zeros((len(train_img_list), CLUSTERNUMBER), "float32")
+    train_hist = np.zeros((len(train_img_list), cluter_number_k), "float32")
     for img_idx in range(len(train_img_list)):
 
         # Assign the descriptors by images
@@ -111,10 +113,10 @@ def bagOfSIFT(train_img_list, test_img_list):
 
     # Do k-means clustering
     # Generate test images' codebook
-    test_codebook, _ = scipy.cluster.vq.kmeans(test_descriptors, CLUSTERNUMBER, 1)
+    test_codebook, _ = scipy.cluster.vq.kmeans(test_descriptors, cluter_number_k, 1)
 
     # Assign descriptors to centroids and calculate the histogram
-    test_hist = np.zeros((len(test_img_list), CLUSTERNUMBER), "float32")
+    test_hist = np.zeros((len(test_img_list), cluter_number_k), "float32")
     for img_idx in range(len(test_img_list)):
 
         # Assign the descriptors by images
@@ -164,40 +166,92 @@ class NearestNeighbor(object):
 # Read in all data
 img_dirs, train_img_list, test_img_list = dataRead()
 
-# Find descriptors and cluster. Returned in np array form
-train_hist, test_hist = bagOfSIFT(train_img_list, test_img_list)
+L1_performance = []
+L2_performance = []
+fig_labels = []
+cluster_numbers = []
 
-# print(train_hist.shape)
-# print(test_hist.shape)
+# Generate the list of clustering
+for k in range(CLUSTER_START, CLUSTER_END, CLUSTER_STEP):
+    cluster_numbers.append(k)
 
-# Create lable dictionary
-label_dict = {}
-for idx, label in enumerate(img_dirs):
-     label_dict[idx] = label
+# Train with different k
+for k in cluster_numbers:
 
-# Create Y results
-train_Y = np.repeat(np.arange(15), 100)
-test_Y = np.repeat(np.arange(15), 10)
+    # Find descriptors and cluster. Returned in np array form
+    train_hist, test_hist = bagOfSIFT(k, train_img_list, test_img_list)
 
-nn = NearestNeighbor()
-nn.train(train_hist, train_Y)
-Yte_predict_L1 = nn.predict(test_hist, 'L1')
-print('Bag of SIFT, NN with L1 norm: %f' % (np.mean(Yte_predict_L1 == test_Y)))
-Yte_predict_L2 = nn.predict(test_hist, 'L2')
-print('Bag of SIFT, NN with L2 norm: %f' % (np.mean(Yte_predict_L2 == test_Y)))
+    # Create lable dictionary
+    label_dict = {}
+    for idx, label in enumerate(img_dirs):
+         label_dict[idx] = label
 
-# Confusion matrix
-con_mat_L1 = confusion_matrix(test_Y, Yte_predict_L1)
-con_mat_L2 = confusion_matrix(test_Y, Yte_predict_L2)
+    # Create Y results
+    train_Y = np.repeat(np.arange(15), 100)
+    test_Y = np.repeat(np.arange(15), 10)
 
-# Plot non-normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(con_mat_L1, classes=img_dirs,
-                      title='Confusion matrix, NN')
-plt.savefig('./task_2_out/confustion_mat_nn.png', bbox_inches='tight', dpi=300)
-plt.close()
+    nn = NearestNeighbor()
+    nn.train(train_hist, train_Y)
+    Yte_predict_L1 = nn.predict(test_hist, 'L1')
+    L1_accuracy = np.mean(Yte_predict_L1 == test_Y)
+    print('Bag of SIFT, NN with L1 norm: %f' % L1_accuracy)
+    Yte_predict_L2 = nn.predict(test_hist, 'L2')
+    L2_accuracy = np.mean(Yte_predict_L2 == test_Y)
+    print('Bag of SIFT, NN with L2 norm: %f' % L2_accuracy)
+
+    L1_performance.append(L1_accuracy)
+    L2_performance.append(L2_accuracy)
+    fig_labels.append(('K = ' + str(k)))
+
+    # Confusion matrix
+    con_mat_L1 = confusion_matrix(test_Y, Yte_predict_L1)
+    con_mat_L2 = confusion_matrix(test_Y, Yte_predict_L2)
+
+    # Plot non-normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(con_mat_L1, classes=img_dirs, title='Confusion matrix KNN + NN')
+    plt.savefig('./task_2_out/confustion_mat_knn_' + str(k) + '.png', bbox_inches='tight', dpi=300)
+    plt.close()
+
+# Draw the performance figure
+
+# First generate the index
+bar_idx = np.arange(1, (len(cluster_numbers) + 1))
+
+# Create subplot to display multiple bars
+L1_fig, L1_axes = plt.subplots()
+plt.bar(bar_idx, L1_performance)
+
+# Set x labels
+L1_axes.set_xticks(bar_idx)
+L1_axes.set_xticklabels(fig_labels)
+
+# Set y label
+L1_axes.set_ylabel('Accuracy')
+L1_axes.set_ybound([0, 0.7])
+
+# Set title
+L1_axes.set_title('L1 Performance')
+
+# Save image
+plt.savefig('./task_2_out/L1_performance.png', bbox_inches='tight', dpi=300)
+
+# Create subplot to display multiple bars
+L2_fig, L2_axes = plt.subplots()
+plt.bar(bar_idx, L2_performance)
+
+# Set x labels
+L2_axes.set_xticks(bar_idx)
+L2_axes.set_xticklabels(fig_labels)
+
+# Set y label
+L2_axes.set_ylabel('Accuracy')
+L2_axes.set_ybound([0, 0.7])
+
+# Set title
+L2_axes.set_title('L2 Performance')
+
+# Save image
+plt.savefig('./task_2_out/L2_performance.png', bbox_inches='tight', dpi=300)
 
 
-# Show the histogram
-# print(len(train_hist))
-# print(len(test_hist))
