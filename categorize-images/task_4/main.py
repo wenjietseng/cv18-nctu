@@ -100,10 +100,8 @@ def test(epoch):
     correct = 0
     total = 0
     for batch_idx, (inputs, targets) in enumerate(test_loader):
-       if use_cuda:
+        if use_cuda:
             inputs, labels = inputs.cuda(), labels.cuda()
-        
-
         inputs, targets = Variable(inputs, volatile=True), Variable(targets)
         outputs = net(inputs)
         loss = criterion(outputs, targets)
