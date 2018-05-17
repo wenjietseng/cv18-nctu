@@ -14,7 +14,7 @@ class WJNet(nn.Module):
         self.pool4 = nn.MaxPool2d(2, 2)
 
 
-        self.fc1 = nn.Linear(4000, 1000)
+        self.fc1 = nn.Linear(3 * 3 * 2048, 1000)
         self.fc2 = nn.Linear(1000, 100)
         self.fc3 = nn.Linear(100, 15)
         self._initialize_weights()
