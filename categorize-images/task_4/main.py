@@ -50,7 +50,7 @@ print('====> Complete loading data!')
 use_cuda = torch.cuda.is_available()
 
 # 2. Define network, models are stored in model.py
-net = WJNet() # 54 acc
+net = WJNet() # 54% acc (16, 32, 64, 128)
 # net = ResNet18()
 
 if use_cuda:
