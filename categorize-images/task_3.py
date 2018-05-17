@@ -9,24 +9,14 @@
     - Confusion matrix visualization result (see task_1.py)
 """
 #---------------------------------------------#
-# task2
-
-from sklearn import svm
+# Bag of SIFT
 from sklearn import cluster, metrics
 import numpy as np
 import cv2, os
 import matplotlib.pyplot as plt
+import scipy.cluster.vq
 
-# Transform the clustered result into histogram
-def clusterToHistogram(clt):
-    # Create label from 0 to k
-    numLabels = np.arange(0, len(np.unique(clt.labels_)) + 1)
-
-    # Create histogram
-    (hist, _) = np.histogram(clt.labels_, bins = numLabels)
-
-    # Return histogram
-    return hist
+CLUSTERNUMBER = 10
 
 # Function used to read data
 def dataRead():
@@ -37,18 +27,18 @@ def dataRead():
     # Read the folder names
     img_dirs = [d for d in os.listdir(train_path) if not d.startswith('.')]
 
-    # Read all the file names in folders, one folder by one folder0
+    # Read all the file names in folders, one folder by one folder
     img_names = [os.listdir(train_path + d) for d in img_dirs if not d.startswith('.')]
 
-    # Read all the images
+    # Read all the images, and record their directories
     for d_idx in range(15):
         for name in img_names[d_idx]:
             if not name.startswith('.'):
                 img = cv2.imread(train_path + img_dirs[d_idx] + '/' + name, 0)
-                train_img_list.append(img)
+                train_img_list.append((img_dirs[d_idx], img))
    
     # Print out the number of training images
-    # print("Number of training images: %d " % len(train_img_list))
+    print("Number of training images: %d " % len(train_img_list))
 
     # Path to test data
     test_path = "./hw4_data/test/"
@@ -57,15 +47,15 @@ def dataRead():
     # Read all the file names in folders, one folder by one folder
     img_names = [os.listdir(test_path + d) for d in img_dirs if not d.startswith('.')]
 
-    # Read all the images
+    # Read all the images, and record their directories
     for d_idx in range(15):
         for name in img_names[d_idx]:
             if not name.startswith('.'):
                 img = cv2.imread(test_path + img_dirs[d_idx] + '/' + name, 0)
-                test_img_list.append(img)
+                test_img_list.append((img_dirs[d_idx], img))
     
     # Print out the number of training images
-    # print("Number of training images: %d " % len(train_img_list))
+    print("Number of testing images: %d " % len(test_img_list))
 
     # Return data
     return img_dirs, train_img_list, test_img_list
@@ -77,40 +67,66 @@ def bagOfSIFT(train_img_list, test_img_list):
 
     # TRAIN IMAGE
     # Compute descriptors, and store into descriptor array
-    train_descriptors = []
+    train_descriptors_list = []
     for img_idx in range(len(train_img_list)):
-        _, descriptors = extractor.detectAndCompute(train_img_list[img_idx], None)
-        train_descriptors.append(descriptors)
+        _, descriptors = extractor.detectAndCompute(train_img_list[img_idx][1], None)
+        train_descriptors_list.append((train_img_list[img_idx][0], descriptors))
+
+    # Transform the descriptor list into numpy array
+    "Stored as an N*128 descriptor array, where N = number of all KPs in ALL IMAGES"
+    # Initiate array with first descriptor
+    train_descriptors = train_descriptors_list[0][1]
+    for _ , image_descriptor in train_descriptors_list[1: ]:
+        train_descriptors = np.vstack((train_descriptors, image_descriptor))
 
     # Do k-means clustering
-    # Initiate KMeans
-    clt = cluster.KMeans(n_clusters = 8, random_state = 0)
+    # Generate train images' codebook
+    train_codebook, _ = scipy.cluster.vq.kmeans(train_descriptors, CLUSTERNUMBER, 1)
 
-    # Cluster the histograms
-    train_hist = []
-    for clt_idx in range(len(train_descriptors)):
-        clt.fit(train_descriptors[clt_idx])
+    # Assign descriptors to centroids and calculate the histogram
+    train_hist = np.zeros((len(train_img_list), CLUSTERNUMBER), "float32")
+    for img_idx in range(len(train_img_list)):
 
-        # Transform the clustered result into histogram
-        train_hist.append(clusterToHistogram(clt))
+        # Assign the descriptors by images
+        mapping, _ = scipy.cluster.vq.vq(train_descriptors_list[img_idx][1], train_codebook)
+
+        # Review the result of mapping of descriptors from this image, and record the point
+        # accumulation in each centroid
+        for mapped_label in mapping:
+            train_hist[img_idx][mapped_label] += 1
 
     # TEST IMAGE
     # Compute descriptors, and store into descriptor array
-    test_descriptors = []
+    test_descriptors_list = []
     for img_idx in range(len(test_img_list)):
-        _, descriptors = extractor.detectAndCompute(test_img_list[img_idx], None)
-        test_descriptors.append(descriptors)
+        _, descriptors = extractor.detectAndCompute(test_img_list[img_idx][1], None)
+        test_descriptors_list.append((test_img_list[img_idx][0], descriptors))
 
-    # Cluster the histograms
-    test_hist = []
-    for clt_idx in range(len(test_descriptors)):
-        clt.fit(test_descriptors[clt_idx])
+    # Transform the descriptor list into numpy array
+    "Stored as an N*128 descriptor array, where N = number of all KPs in ALL IMAGES"
+    # Initiate array with first descriptor
+    test_descriptors = test_descriptors_list[0][1]
+    for _ , image_descriptor in test_descriptors_list[1: ]:
+        test_descriptors = np.vstack((test_descriptors, image_descriptor))
 
-        # Transform the clustered result into histogram
-        test_hist.append(clusterToHistogram(clt))
+    # Do k-means clustering
+    # Generate test images' codebook
+    test_codebook, _ = scipy.cluster.vq.kmeans(test_descriptors, CLUSTERNUMBER, 1)
 
-    # Return histograms as np array
-    return np.asarray(train_hist), np.asarray(test_hist)
+    # Assign descriptors to centroids and calculate the histogram
+    test_hist = np.zeros((len(test_img_list), CLUSTERNUMBER), "float32")
+    for img_idx in range(len(test_img_list)):
+
+        # Assign the descriptors by images
+        mapping, _ = scipy.cluster.vq.vq(test_descriptors_list[img_idx][1], test_codebook)
+
+        # Review the result of mapping of descriptors from this image, and record the point
+        # accumulation in each centroid
+        for mapped_label in mapping:
+            test_hist[img_idx][mapped_label] += 1
+
+    # Return clustered result of every image in form of histogram
+    return train_hist, test_hist
 
 # Read in all data
 img_dirs, train_img_list, test_img_list = dataRead()
@@ -118,9 +134,8 @@ img_dirs, train_img_list, test_img_list = dataRead()
 # Find descriptors and cluster. Returned in np array form
 train_hist, test_hist = bagOfSIFT(train_img_list, test_img_list)
 
-print(train_hist.shape)
-print(test_hist.shape)
-
+# print(train_hist.shape)
+# print(test_hist.shape)
 
 # Create lable dictionary
 label_dict = {}
@@ -130,9 +145,11 @@ for idx, label in enumerate(img_dirs):
 # Create Y results
 train_Y = np.repeat(np.arange(15), 100)
 test_Y = np.repeat(np.arange(15), 10)
+
 #---------------------------------------------#
 
 # SVM
+from sklearn import svm
 svc_model = svm.SVC(gamma=0.001, C=100, kernel='linear')
 svc_model.fit(train_hist, train_Y)
 predicted = svc_model.predict(test_hist)
