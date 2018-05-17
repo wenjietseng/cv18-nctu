@@ -22,7 +22,8 @@ from utils import *
 import torchvision.datasets as dset
 
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
-my_transforms = transforms.Compose([transforms.CenterCrop(220),
+my_transforms = transforms.Compose([transforms.Grayscale(),
+                                    transforms.CenterCrop(220),
                                     transforms.Resize(254),
                                     transforms.Pad(1, fill=0),
                                     transforms.RandomHorizontalFlip(),
@@ -60,7 +61,7 @@ def train(epoch):
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         print("in batch iters")
         print(inputs[batch_idx])
-        
+
         
         # zero the parameter gradients
         optimizer.zero_grad()
