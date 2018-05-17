@@ -50,7 +50,9 @@ print('====> Complete loading data!')
 use_cuda = torch.cuda.is_available()
 
 # 2. Define network, models are stored in model.py
-net = WJNet() # 54% acc (16, 32, 64, 128)
+net = WJNet()
+# 54% acc (16, 32, 64, 128)
+# 61% acc (8, 16, 32, 64)
 # net = ResNet18()
 
 if use_cuda:
@@ -97,7 +99,7 @@ def train(epoch, writer):
         print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
                 (epoch + 1, batch_idx + 1, train_loss / (batch_idx+1), 100.0*float(correct)/float(total), correct, total))
         if batch_idx == 46:
-            writer.writerow([epoch, train_loss/(batch_idx+1),100.*correct/total])
+            writer.writerow([epoch, (train_loss/(batch_idx+1)).item(), (100.*float(correct)/float(total)).item() ])
 
 # 5. Testing with test data
 def test(epoch, writer):
@@ -119,8 +121,8 @@ def test(epoch, writer):
 
         print('[%d, %5d] Loss: %.5f | Acc: %.3f%% (%d/%d)'
             % (epoch+1, batch_idx+1, test_loss/(batch_idx+1), 100.*float(correct)/float(total), correct, total))
-        if batch_idx == 46:
-            writer.writerow([epoch, test_loss/(batch_idx+1),100.*correct/total])
+        if batch_idx == 4:
+            writer.writerow([epoch, (test_loss/(batch_idx+1)).item(), (100.*float(correct)/float(total)).item() ])
 
 # Repeat 100 epochs
 for epoch in range(80):
