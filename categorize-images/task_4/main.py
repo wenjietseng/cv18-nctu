@@ -92,7 +92,7 @@ def train(epoch, writer):
         optimizer.step()
 
         # print statistics
-        train_loss += loss.data[0]
+        train_loss += loss.item()
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += predicted.eq(labels.data).cpu().sum()
@@ -116,7 +116,7 @@ def test(epoch, writer):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
 
-        test_loss += loss.data[0]
+        test_loss += loss.item()
         _, predicted = torch.max(outputs.data, 1)
         total += targets.size(0)
         correct += predicted.eq(targets.data).cpu().sum()
