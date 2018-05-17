@@ -28,10 +28,10 @@ train_writer = csv.writer(open("./WJNet-train-res18.csv", 'w'))
 test_writer = csv.writer(open("./WJNet-test-res18.csv", 'w'))
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
 my_transforms = transforms.Compose([transforms.Grayscale(),
-                                    transforms.Pad(4, fill=0),
-                                    transforms.RandomCrop(32, padding=4),
-                                    # transforms.CenterCrop(220),
-                                    # transforms.Resize(32), # 222 for WJNet
+                                    # transforms.Pad(4, fill=0),
+                                    # transforms.RandomCrop(, padding=4),
+                                    transforms.CenterCrop(220),
+                                    transforms.Resize(256), # 222 for WJNet
                                     # transforms.Pad(1, fill=0),
                                     transforms.RandomHorizontalFlip(),
                                     transforms.ToTensor(),
