@@ -79,14 +79,30 @@ def train(epoch):
         total += labels.size(0)
         correct += predicted.eq(labels.data).cpu().sum()
 
-        if batch_idx % 9 == 0:    # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.5f' %
-                  (epoch + 1, batch_idx + 1, train_loss / 10))
+        if batch_idx % 10 == 0:    # print every 2000 mini-batches
+            print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
+                  (epoch + 1, batch_idx + 1, train_loss / 10, 100.0*correct/total, correct, total))
 
 
 # 5. Testing with test data
 def test(epoch):
-    pass
+    net.eval()
+    test_loss = 0
+    correct = 0
+    total = 0
+    for batch_idx, (inputs, targets) in enumerate(test_loader):
+        inputs, targets = Variable(inputs, volatile=True), Variable(targets)
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+
+        test_loss += loss.data[0]
+        _, predicted = torch.max(outputs.data, 1)
+        total += targets.size(0)
+        correct += predicted.eq(targets.data).cpu().sum()
+
+        print('[%d, %5d] Loss: %.5f | Acc: %.3f%% (%d/%d)'
+            % (epoch+1, batch_idx+1, test_loss/10, 100.*correct/total, correct, total))
+       
 
 # Repeat 100 epochs
 for epoch in range(80):

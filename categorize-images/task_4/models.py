@@ -20,33 +20,13 @@ class WJNet(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        print('conv1 finished')
-        print(x.size())
-
         x = self.pool1(x)
-        print('pool1 finish')
-        print(x.size())
         x = F.relu(self.conv2(x))
-        print('conv2 finish')
-        print(x.size())
         x = self.pool2(x)
-        print('pool2 finish')
-        print(x.size())
-
         x = F.relu(self.conv3(x))
-        print('conv3 finish')
-        print(x.size())
         x = self.pool3(x)
-        print('pool3 finish')
-        print(x.size())
-
-
         x = F.relu(self.conv4(x))
-        print('conv4 finish')
-        print(x.size())
         x = self.pool4(x)
-        print('pool4 finish')
-        print(x.size())
 
         # flatten
         x = x.view(-1, self.num_flat_features(x))
