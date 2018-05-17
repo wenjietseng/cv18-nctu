@@ -42,8 +42,16 @@ classes = [d for d in os.listdir('../hw4_data/train') if not d.startswith('.')]
 
 print('====> Complete loading data!')
 
+use_cuda = torch.cuda.is_available()
+
 # 2. Define network, models are stored in model.py
 net = WJNet()
+
+
+if use_cuda:
+    net.cuda()
+    net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
+    cudnn.benchmark = True
 
 # 3. Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -61,7 +69,8 @@ def train(epoch):
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         # print("in batch iters")
         # print(inputs.size())
-
+        if use_cuda:
+            inputs, labels = inputs.cuda(), labels.cuda()
         
         # zero the parameter gradients
         optimizer.zero_grad()
@@ -91,6 +100,10 @@ def test(epoch):
     correct = 0
     total = 0
     for batch_idx, (inputs, targets) in enumerate(test_loader):
+       if use_cuda:
+            inputs, labels = inputs.cuda(), labels.cuda()
+        
+
         inputs, targets = Variable(inputs, volatile=True), Variable(targets)
         outputs = net(inputs)
         loss = criterion(outputs, targets)
