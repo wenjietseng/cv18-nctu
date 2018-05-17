@@ -32,7 +32,7 @@ train_dataset = ImageDataset(root_dir='../hw4_data', mode='train',
                                         transforms.Normalize((0.5,), (0.5,)),
                              ]))
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
-
+print(train_loader)
 test_dataset = ImageDataset(root_dir='../hw4_data', mode='test',
                             transform=transforms.Compose([
                                       transforms.CenterCrop(220),
