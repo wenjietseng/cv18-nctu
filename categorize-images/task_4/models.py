@@ -10,6 +10,9 @@ class WJNet(nn.Module):
         self.pool2 = nn.MaxPool2d(2, 2)
         self.conv3 = nn.Conv2d(16, 32, 5)
         self.pool3 = nn.MaxPool2d(2, 2)
+        self.conv4 = nn.Conv2d(16, 64, 5)
+        self.pool4 = nn.MaxPool2d(2, 2)
+
 
         self.fc1 = nn.Linear(6 * 21 * 25, 128)
         self.fc2 = nn.Linear(128, 100)
@@ -36,6 +39,15 @@ class WJNet(nn.Module):
         x = self.pool3(x)
         print('pool3 finish')
         print(x.size())
+
+
+        x = F.relu(self.conv4(x))
+        print('conv4 finish')
+        print(x.size())
+        x = self.pool4(x)
+        print('pool4 finish')
+        print(x.size())
+
         # flatten
         x = x.view(-1, self.num_flat_features(x))
         print(x.size())
