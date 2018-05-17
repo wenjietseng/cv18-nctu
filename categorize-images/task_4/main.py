@@ -60,7 +60,7 @@ def train(epoch):
 
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         print("in batch iters")
-        print(inputs[batch_idx])
+        print(inputs.size)
 
         
         # zero the parameter gradients
