@@ -10,11 +10,11 @@ class WJNet(nn.Module):
         self.pool2 = nn.MaxPool2d(2, 2)
         self.conv3 = nn.Conv2d(16, 32, 5)
         self.pool3 = nn.MaxPool2d(2, 2)
-        self.conv4 = nn.Conv2d(16, 64, 5)
+        self.conv4 = nn.Conv2d(32, 64, 5)
         self.pool4 = nn.MaxPool2d(2, 2)
 
 
-        self.fc1 = nn.Linear(6 * 21 * 25, 128)
+        self.fc1 = nn.Linear(64 * 32 * 16 * 6, 128)
         self.fc2 = nn.Linear(128, 100)
         self.fc3 = nn.Linear(100, 15)
 
