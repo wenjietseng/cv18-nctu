@@ -4,17 +4,17 @@ import torch.nn.functional as F
 class WJNet(nn.Module):
     def __init__(self):
         super(WJNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, 3, stride=1)
+        self.conv1 = nn.Conv2d(1, 8, 3, stride=1)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(16, 32, 3)
+        self.conv2 = nn.Conv2d(8, 16, 3)
         self.pool2 = nn.MaxPool2d(2, 2)
-        self.conv3 = nn.Conv2d(32, 64, 3)
+        self.conv3 = nn.Conv2d(16, 32, 3)
         self.pool3 = nn.MaxPool2d(2, 2)
-        self.conv4 = nn.Conv2d(64, 128, 3)
+        self.conv4 = nn.Conv2d(32, 64, 3)
         self.pool4 = nn.MaxPool2d(2, 2)
 
 
-        self.fc1 = nn.Linear(3 * 3 * 2048, 1000)
+        self.fc1 = nn.Linear(3 * 3 * 1024, 1000)
         self.fc2 = nn.Linear(1000, 100)
         self.fc3 = nn.Linear(100, 15)
         self._initialize_weights()

@@ -23,6 +23,9 @@ from resnet import ResNet18
 from utils import *
 import torchvision.datasets as dset
 
+import csv 
+train_writer = csv.writer(open("./WJNet-train.csv", 'w'))
+test_writer = csv.writer(open("./WJNet-test.csv", 'w'))
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
 my_transforms = transforms.Compose([transforms.Grayscale(),
                                     transforms.CenterCrop(220),
@@ -47,8 +50,8 @@ print('====> Complete loading data!')
 use_cuda = torch.cuda.is_available()
 
 # 2. Define network, models are stored in model.py
-# net = WJNet() #
-net = ResNet18()
+net = WJNet() # 54 acc
+# net = ResNet18()
 
 if use_cuda:
     net.cuda()
@@ -61,7 +64,7 @@ optimizer = optim.Adam(net.parameters())#, lr=0.1, momentum=0.9, weight_decay=1e
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma=0.1)
 
 # 4. Training
-def train(epoch):
+def train(epoch, writer):
 
     net.train()
     train_loss = 0.0
@@ -93,10 +96,10 @@ def train(epoch):
         # if batch_idx % 10 == 0:    # print every 2000 mini-batches
         print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
                 (epoch + 1, batch_idx + 1, train_loss / (batch_idx+1), 100.0*float(correct)/float(total), correct, total))
-
+        writer.writerow([epoch, test_loss/(batch_idx+1),100.*correct/total])
 
 # 5. Testing with test data
-def test(epoch):
+def test(epoch, writer):
     net.eval()
     test_loss = 0
     correct = 0
@@ -115,14 +118,14 @@ def test(epoch):
 
         print('[%d, %5d] Loss: %.5f | Acc: %.3f%% (%d/%d)'
             % (epoch+1, batch_idx+1, test_loss/(batch_idx+1), 100.*float(correct)/float(total), correct, total))
-       
+        writer.writerow([epoch, test_loss/(batch_idx+1),100.*correct/total])
 
 # Repeat 100 epochs
 for epoch in range(80):
     print('\nEpoch: %d' % epoch)
     print('Training')
-    train(epoch)
+    train(epoch, train_writer)
     print('Testing')
-    test(epoch)
+    test(epoch, test_writer)
 
 # 6. Output results
