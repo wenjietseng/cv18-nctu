@@ -61,7 +61,7 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma
 
 # 4. Training
 def train(epoch):
-    print('\nEpoch: %d' % epoch)
+
     net.train()
     train_loss = 0.0
     correct = 0
@@ -118,7 +118,10 @@ def test(epoch):
 
 # Repeat 100 epochs
 for epoch in range(80):
+    print('\nEpoch: %d' % epoch)
+    print('Training')
     train(epoch)
+    print('Testing')
     test(epoch)
 
 # 6. Output results

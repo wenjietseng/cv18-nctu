@@ -4,19 +4,20 @@ import torch.nn.functional as F
 class WJNet(nn.Module):
     def __init__(self):
         super(WJNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 6, 5, stride=1)
+        self.conv1 = nn.Conv2d(1, 64, 3, stride=1)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.conv2 = nn.Conv2d(64, 128, 3)
         self.pool2 = nn.MaxPool2d(2, 2)
-        self.conv3 = nn.Conv2d(16, 32, 5)
+        self.conv3 = nn.Conv2d(128, 256, 3)
         self.pool3 = nn.MaxPool2d(2, 2)
-        self.conv4 = nn.Conv2d(32, 64, 5)
+        self.conv4 = nn.Conv2d(256, 512, 3)
         self.pool4 = nn.MaxPool2d(2, 2)
 
 
         self.fc1 = nn.Linear(6400, 128)
         self.fc2 = nn.Linear(128, 100)
         self.fc3 = nn.Linear(100, 15)
+        self._initialize_weights()
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -42,4 +43,17 @@ class WJNet(nn.Module):
         for s in size:
             num_features *= s
         return num_features
+    
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal(m.weight, mode='fan_out')#, nonlinearity='relu')
+                if m.bias is not None:
+                   nn.init.constant(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant(m.weight, 1)
+                nn.init.constant(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal(m.weight, 0, 0.01)
+                nn.init.constant(m.bias, 0)
 
