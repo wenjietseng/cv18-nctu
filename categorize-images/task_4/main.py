@@ -59,8 +59,8 @@ def train(epoch):
     total = 0
 
     for batch_idx, (inputs, labels) in enumerate(train_loader):
-        print("in batch iters")
-        print(inputs.size())
+        # print("in batch iters")
+        # print(inputs.size())
 
         
         # zero the parameter gradients
@@ -79,9 +79,9 @@ def train(epoch):
         total += labels.size(0)
         correct += predicted.eq(labels.data).cpu().sum()
 
-        if batch_idx % 10 == 0:    # print every 2000 mini-batches
-            print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
-                  (epoch + 1, batch_idx + 1, train_loss / 10, 100.0*correct/total, correct, total))
+        # if batch_idx % 10 == 0:    # print every 2000 mini-batches
+        print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
+                (epoch + 1, batch_idx + 1, train_loss / 10, 100.0*correct/total, correct, total))
 
 
 # 5. Testing with test data
