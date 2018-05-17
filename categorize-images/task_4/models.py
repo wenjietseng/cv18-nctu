@@ -6,7 +6,7 @@ class WJNet(nn.Module):
         super(WJNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 4, 4)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(4, 16, 4)
+        self.conv2 = nn.Conv2d(4, 16, 16)
         self.pool2 = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(16 * 4 * 4, 128)
         self.fc2 = nn.Linear(128, 100)
@@ -14,9 +14,18 @@ class WJNet(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
+        print('conv1 finished')
+        print(x.size())
+
         x = self.pool1(x)
+        print('pool1 finish')
+        print(x.size())
         x = F.relu(self.conv2(x))
+        print('conv2 finish')
+        print(x.size())
         x = self.pool2(x)
+        print('pool2 finish')
+        print(x.size())
         # flatten
         # x = x.view(-1, self.num_flat_features(x))
         x = F.relu(self.fc1(x))
