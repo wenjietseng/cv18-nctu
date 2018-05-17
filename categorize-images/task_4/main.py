@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image
 
 from models import WJNet
-from resnet import ResNet20
+from resnet import ResNet18
 from utils import *
 import torchvision.datasets as dset
 
@@ -48,7 +48,7 @@ use_cuda = torch.cuda.is_available()
 
 # 2. Define network, models are stored in model.py
 # net = WJNet() #
-net = ResNet20()
+net = ResNet18()
 
 if use_cuda:
     net.cuda()
