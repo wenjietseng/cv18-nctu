@@ -13,8 +13,10 @@ import numpy as np
 import cv2, os
 import matplotlib.pyplot as plt
 import scipy.cluster.vq
+from sklearn.metrics import confusion_matrix
+from plot_confusion_matrix import plot_confusion_matrix
 
-CLUSTERNUMBER = 10
+CLUSTERNUMBER = 20
 
 # Function used to read data
 def dataRead():
@@ -183,6 +185,17 @@ Yte_predict_L1 = nn.predict(test_hist, 'L1')
 print('Bag of SIFT, NN with L1 norm: %f' % (np.mean(Yte_predict_L1 == test_Y)))
 Yte_predict_L2 = nn.predict(test_hist, 'L2')
 print('Bag of SIFT, NN with L2 norm: %f' % (np.mean(Yte_predict_L2 == test_Y)))
+
+# Confusion matrix
+con_mat_L1 = confusion_matrix(test_Y, Yte_predict_L1)
+con_mat_L2 = confusion_matrix(test_Y, Yte_predict_L2)
+
+# Plot non-normalized confusion matrix
+plt.figure()
+plot_confusion_matrix(con_mat_L1, classes=img_dirs,
+                      title='Confusion matrix, NN')
+plt.savefig('./task_2_out/confustion_mat_nn.png', bbox_inches='tight', dpi=300)
+plt.close()
 
 
 # Show the histogram
