@@ -75,7 +75,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=15):
         super(ResNet, self).__init__()
         self.in_planes = 16
 
@@ -88,7 +88,7 @@ class ResNet(nn.Module):
         # elf._make_layer(block, 512, num_blocks[3], stride=2)
         # average pooling
         #self.avgpool = nn.AvgPool2d(8)
-        self.linear = nn.Linear(64*block.expansion, num_classes)
+        self.linear = nn.Linear(3136,num_classes)#64*block.expansion, num_classes)
 
         # nn.init.kaiming_normal(self.conv1.weight)
         # nn.init.kaiming_normal(self.linear.weight)
