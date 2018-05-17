@@ -53,16 +53,15 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma
 def train(epoch):
     print('\nEpoch: %d' % epoch)
     net.train()
-
     train_loss = 0.0
     correct = 0
     total = 0
 
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         print("in batch iters")
-        print(len(inputs))
-        print(len(labels))
-        print(labels)
+        print(len(inputs.size()))
+        print(len(labels.size()))
+        
         # zero the parameter gradients
         optimizer.zero_grad()
 
