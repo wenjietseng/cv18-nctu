@@ -4,9 +4,9 @@ import torch.nn.functional as F
 class WJNet(nn.Module):
     def __init__(self):
         super(WJNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, 16)
+        self.conv1 = nn.Conv2d(1, 4, 16)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(16, 64, 64)
+        self.conv2 = nn.Conv2d(4, 16, 16)
         self.pool2 = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(16 * 4 * 4, 128)
         self.fc2 = nn.Linear(128, 100)
