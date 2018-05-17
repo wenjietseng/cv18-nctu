@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+from torch.autograd import Variable
 
 import torchvision
 import torchvision.transforms as transforms
@@ -53,10 +54,49 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma=0.1)
 
-# Repeat 100 epochs
-#   4. Training
+# 4. Training
+def train(epoch):
+    print('\nEpoch: %d' % epoch)
+    net.train()
 
-#   5. Testing with test data
+    train_loss = 0.0
+    correct = 0
+    total = 0
+
+    for batch_idx, (inputs, labels) in enumerate(train_loader):
+
+        print(len(inputs))
+        print(len(labels))
+        print(labels)
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        inputs, labels = Variable(inputs), Variable(labels)
+        # forward + backward + optimize
+        outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        # print statistics
+        train_loss += loss.data[0]
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += predicted.eq(labels.data).cpu().sum()
+
+        if batch_idx % 9 == 0:    # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.5f' %
+                  (epoch + 1, batch_idx + 1, train_loss / 10))
+            running_loss = 0.0
+
+
+# 5. Testing with test data
+def test(epoch):
+    pass
+
+# Repeat 100 epochs
+for epoch in range(80):
+    train(epoch)
+    test(epoch)
 
 # 6. Output results
-
