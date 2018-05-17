@@ -64,7 +64,7 @@ def train(epoch):
     total = 0
 
     for batch_idx, (inputs, labels) in enumerate(train_loader):
-
+        print("in batch iters")
         print(len(inputs))
         print(len(labels))
         print(labels)
