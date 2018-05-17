@@ -4,10 +4,13 @@ import torch.nn.functional as F
 class WJNet(nn.Module):
     def __init__(self):
         super(WJNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 3, 3, stride=1)
+        self.conv1 = nn.Conv2d(1, 6, 5, stride=1)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(3, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
         self.pool2 = nn.MaxPool2d(2, 2)
+        self.conv3 = nn.Conv2d(16, 32, 5)
+        self.pool3 = nn.MaxPool2d(2, 2)
+
         self.fc1 = nn.Linear(6 * 21 * 25, 128)
         self.fc2 = nn.Linear(128, 100)
         self.fc3 = nn.Linear(100, 15)
@@ -25,6 +28,13 @@ class WJNet(nn.Module):
         print(x.size())
         x = self.pool2(x)
         print('pool2 finish')
+        print(x.size())
+
+        x = F.relu(self.conv3(x))
+        print('conv3 finish')
+        print(x.size())
+        x = self.pool3(x)
+        print('pool3 finish')
         print(x.size())
         # flatten
         x = x.view(-1, self.num_flat_features(x))
