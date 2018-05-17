@@ -19,27 +19,22 @@ from PIL import Image
 
 from models import WJNet
 from utils import *
+import torchvision.datasets.ImageFolder as ImageFolder
 
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
+my_transforms = transforms.Compose([transforms.CenterCrop(220),
+                                    transforms.Resize(254),
+                                    transforms.Pad(1, fill=0),
+                                    transforms.RandomHorizontalFlip(),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5,), (0.5,))])
 print('====> Loading Data ')
-train_dataset = ImageDataset(root_dir='../hw4_data', mode='train',
-                             transform=transforms.Compose([
-                                        transforms.CenterCrop(220),
-                                        transforms.Resize(254),
-                                        transforms.Pad(1, fill=0),
-                                        transforms.RandomHorizontalFlip(),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize((0.5,), (0.5,)),
-                             ]))
+train_dataset = ImageFolder(root_dir='../hw4_data/train',
+                             transform=my_transforms)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
 print(train_loader)
-test_dataset = ImageDataset(root_dir='../hw4_data', mode='test',
-                            transform=transforms.Compose([
-                                      transforms.CenterCrop(220),
-                                      transforms.Resize(256), 
-                                      transforms.ToTensor(), 
-                                      transforms.Normalize((0.5,), (0.5,)),
-                            ]))
+test_dataset = ImageFolder(root_dir='../hw4_data/test',
+                            transform=my_transforms)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
 classes = [d for d in os.listdir('../hw4_data/train') if not d.startswith('.')]
