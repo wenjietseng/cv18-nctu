@@ -19,27 +19,22 @@ from PIL import Image
 
 from models import WJNet
 from utils import *
+import torchvision.datasets as dset
 
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
+my_transforms = transforms.Compose([transforms.CenterCrop(220),
+                                    transforms.Resize(254),
+                                    transforms.Pad(1, fill=0),
+                                    transforms.RandomHorizontalFlip(),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5,), (0.5,))])
 print('====> Loading Data ')
-train_dataset = ImageDataset(root_dir='../hw4_data', mode='train',
-                             transform=transforms.Compose([
-                                        transforms.CenterCrop(220),
-                                        transforms.Resize(254),
-                                        transforms.Pad(1, fill=0),
-                                        transforms.RandomHorizontalFlip(),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize((0.5,), (0.5,)),
-                             ]))
+train_dataset = dset.ImageFolder(root='../hw4_data/train',
+                             transform=my_transforms)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
-
-test_dataset = ImageDataset(root_dir='../hw4_data', mode='test',
-                            transform=transforms.Compose([
-                                      transforms.CenterCrop(220),
-                                      transforms.Resize(256), 
-                                      transforms.ToTensor(), 
-                                      transforms.Normalize((0.5,), (0.5,)),
-                            ]))
+print(train_loader)
+test_dataset = dset.ImageFolder(root='../hw4_data/test',
+                            transform=my_transforms)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
 classes = [d for d in os.listdir('../hw4_data/train') if not d.startswith('.')]
@@ -64,7 +59,7 @@ def train(epoch):
     total = 0
 
     for batch_idx, (inputs, labels) in enumerate(train_loader):
-
+        print("in batch iters")
         print(len(inputs))
         print(len(labels))
         print(labels)
@@ -87,7 +82,6 @@ def train(epoch):
         if batch_idx % 9 == 0:    # print every 2000 mini-batches
             print('[%d, %5d] loss: %.5f' %
                   (epoch + 1, batch_idx + 1, train_loss / 10))
-            running_loss = 0.0
 
 
 # 5. Testing with test data
