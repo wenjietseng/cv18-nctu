@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from torch.autograd import Variable
+import torch.backends.cudnn as cudnn
 
 import torchvision
 import torchvision.transforms as transforms
