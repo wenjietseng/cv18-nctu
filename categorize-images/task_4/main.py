@@ -56,7 +56,7 @@ if use_cuda:
 
 # 3. Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.adam(net.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
+optimizer = optim.Adam(net.parameters())#, lr=0.1, momentum=0.9, weight_decay=1e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60], gamma=0.1)
 
 # 4. Training
