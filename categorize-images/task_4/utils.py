@@ -53,4 +53,4 @@ class ImageDataset(Dataset):
         return (img, label)
     
     def __len__(self):
-        return len(self.out_list.index)
+        return len(self.out_list)

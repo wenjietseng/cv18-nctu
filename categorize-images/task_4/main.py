@@ -87,7 +87,6 @@ def train(epoch):
         if batch_idx % 9 == 0:    # print every 2000 mini-batches
             print('[%d, %5d] loss: %.5f' %
                   (epoch + 1, batch_idx + 1, train_loss / 10))
-            running_loss = 0.0
 
 
 # 5. Testing with test data
