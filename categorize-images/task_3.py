@@ -148,17 +148,72 @@ test_Y = np.repeat(np.arange(15), 10)
 
 #---------------------------------------------#
 
-# SVM
-from sklearn import svm
-svc_model = svm.SVC(gamma=0.001, C=100, kernel='linear')
-svc_model.fit(train_hist, train_Y)
-predicted = svc_model.predict(test_hist)
+# SVM (svm.SVC, kernel='linear')
+# from sklearn import svm
+# svc_model = svm.SVC(C=1000, kernel='linear')
+# svc_model.fit(train_hist, train_Y)
+# predicted = svc_model.predict(test_hist)
 
+# from sklearn.metrics import accuracy_score
+# print("SVM accuracy(c=1000): %r" % accuracy_score(predicted, test_Y))
+
+'''
+# c=1
+Number of training images: 300
+Number of testing images: 30
+SVM accuracy(c=1): 0.36666666666666664
+
+# c=10
+Number of training images: 300
+Number of testing images: 30
+SVM accuracy(c=10): 0.4666666666666667
+
+# c=100
+Number of training images: 300
+Number of testing images: 30
+SVM accuracy(c=100): 0.36666666666666664
+
+# c=1000
+Number of training images: 300
+Number of testing images: 30
+SVM accuracy(c=1000): 0.6333333333333333
+'''
+
+
+# SVM2 (normalize & LinearSVC)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
+
+pipe_lrSVC = Pipeline([('scaler', StandardScaler()), ('clf', LinearSVC(C=100))])
+pipe_lrSVC.fit(train_hist, train_Y)
+predicted = pipe_lrSVC.predict(test_hist)
 from sklearn.metrics import accuracy_score
-print("SVM accuracy: %r" % accuracy_score(predicted, test_Y))
+print("SVM accuracy(c=100): %r" % accuracy_score(predicted, test_Y))
 
-# result:
-# (1500, 8)
-# (150, 8)
-# SVM accuracy: 0.14
+'''
+# c=1
+Number of training images: 1500
+Number of testing images: 150
+SVM accuracy(c=1): 0.16
 
+# c=10
+Number of training images: 1500
+Number of testing images: 150
+SVM accuracy(c=10): 0.06
+
+# c=100
+Number of training images: 1500
+Number of testing images: 150
+SVM accuracy(c=100): 0.12
+
+# c=1000
+Number of training images: 1500
+Number of testing images: 150
+SVM accuracy(c=1000): 0.05333333333333334
+
+# c=10000
+Number of training images: 1500
+Number of testing images: 150
+SVM accuracy(c=10000): 0.08
+'''
