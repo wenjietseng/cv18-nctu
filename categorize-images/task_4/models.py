@@ -8,7 +8,7 @@ class WJNet(nn.Module):
         self.pool1 = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(3, 6, 21)
         self.pool2 = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(6 * 14 * 15, 128)
+        self.fc1 = nn.Linear(6 * 21 * 25, 128)
         self.fc2 = nn.Linear(128, 100)
         self.fc3 = nn.Linear(100, 15)
 
@@ -39,6 +39,5 @@ class WJNet(nn.Module):
         num_features = 1
         for s in size:
             num_features *= s
-        print(num_features)
         return num_features
 
