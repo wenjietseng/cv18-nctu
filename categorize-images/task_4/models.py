@@ -6,7 +6,7 @@ class WJNet(nn.Module):
         super(WJNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 3, 15)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 6, 14)
+        self.conv2 = nn.Conv2d(3, 6, 14)
         self.pool2 = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(6 * 14 * 15, 128)
         self.fc2 = nn.Linear(128, 100)
