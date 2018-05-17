@@ -24,13 +24,15 @@ from utils import *
 import torchvision.datasets as dset
 
 import csv 
-train_writer = csv.writer(open("./WJNet-train-dropout.csv", 'w'))
-test_writer = csv.writer(open("./WJNet-test.csv-dropout", 'w'))
+train_writer = csv.writer(open("./WJNet-train-res18.csv", 'w'))
+test_writer = csv.writer(open("./WJNet-test-res18.csv", 'w'))
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
 my_transforms = transforms.Compose([transforms.Grayscale(),
-                                    transforms.CenterCrop(220),
-                                    transforms.Resize(222),
-                                    transforms.Pad(1, fill=0),
+                                    transforms.Pad(4, fill=0),
+                                    transforms.RandomCrop(220, padding=4),
+                                    # transforms.CenterCrop(220),
+                                    transforms.Resize(32), # 222 for WJNet
+                                    # transforms.Pad(1, fill=0),
                                     transforms.RandomHorizontalFlip(),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5,), (0.5,))])
@@ -50,10 +52,10 @@ print('====> Complete loading data!')
 use_cuda = torch.cuda.is_available()
 
 # 2. Define network, models are stored in model.py
-net = WJNet()
+# net = WJNet()
 # 54% acc (16, 32, 64, 128)
 # 61% acc (8, 16, 32, 64)
-# net = ResNet18()
+net = ResNet18()
 
 if use_cuda:
     net.cuda()
