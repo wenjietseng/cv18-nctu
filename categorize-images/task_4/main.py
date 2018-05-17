@@ -19,6 +19,7 @@ import numpy as np
 from PIL import Image
 
 from models import WJNet
+from resnet import ResNet20
 from utils import *
 import torchvision.datasets as dset
 
@@ -46,8 +47,8 @@ print('====> Complete loading data!')
 use_cuda = torch.cuda.is_available()
 
 # 2. Define network, models are stored in model.py
-net = WJNet()
-
+# net = WJNet() #
+net = ResNet20()
 
 if use_cuda:
     net.cuda()
@@ -91,7 +92,7 @@ def train(epoch):
 
         # if batch_idx % 10 == 0:    # print every 2000 mini-batches
         print('[%d, %5d] Loss: %.5f | Acc: %.3f (%d/%d)' %
-                (epoch + 1, batch_idx + 1, train_loss / (batch_idx+1), 100.0*correct/total, correct, total))
+                (epoch + 1, batch_idx + 1, train_loss / (batch_idx+1), 100.0*float(correct)/float(total), correct, total))
 
 
 # 5. Testing with test data
@@ -113,7 +114,7 @@ def test(epoch):
         correct += predicted.eq(targets.data).cpu().sum()
 
         print('[%d, %5d] Loss: %.5f | Acc: %.3f%% (%d/%d)'
-            % (epoch+1, batch_idx+1, test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            % (epoch+1, batch_idx+1, test_loss/(batch_idx+1), 100.*float(correct)/float(total), correct, total))
        
 
 # Repeat 100 epochs
