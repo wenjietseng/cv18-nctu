@@ -6,7 +6,7 @@ class WJNet(nn.Module):
         super(WJNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 3, 25)
         self.pool1 = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(3, 6, 14)
+        self.conv2 = nn.Conv2d(3, 6, 21)
         self.pool2 = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(6 * 14 * 15, 128)
         self.fc2 = nn.Linear(128, 100)
@@ -28,6 +28,7 @@ class WJNet(nn.Module):
         print(x.size())
         # flatten
         x = x.view(-1, self.num_flat_features(x))
+        print(x.size())
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
