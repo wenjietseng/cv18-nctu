@@ -16,8 +16,8 @@ import scipy.cluster.vq
 from sklearn.metrics import confusion_matrix
 from plot_confusion_matrix import plot_confusion_matrix
 
-CLUSTER_START = 105
-CLUSTER_END = 201
+CLUSTER_START = 5
+CLUSTER_END = 101
 CLUSTER_STEP = 5
 
 # Function used to read data
@@ -235,7 +235,7 @@ L1_axes.set_ybound([0, 0.7])
 L1_axes.set_title('L1 Performance')
 
 # Save image
-plt.savefig('./task_2_out/L1_performance_2.png', bbox_inches='tight', dpi=300)
+plt.savefig('./task_2_out/L1_performance.png', bbox_inches='tight', dpi=300)
 
 # Create subplot to display multiple bars
 L2_fig, L2_axes = plt.subplots()
@@ -254,6 +254,6 @@ L2_axes.set_ybound([0, 0.7])
 L2_axes.set_title('L2 Performance')
 
 # Save image
-plt.savefig('./task_2_out/L2_performance_2.png', bbox_inches='tight', dpi=300)
+plt.savefig('./task_2_out/L2_performance.png', bbox_inches='tight', dpi=300)
 
 
