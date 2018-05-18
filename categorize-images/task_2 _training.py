@@ -15,8 +15,10 @@ import matplotlib.pyplot as plt
 import scipy.cluster.vq
 from sklearn.metrics import confusion_matrix
 from plot_confusion_matrix import plot_confusion_matrix
-k = 80
-NUMOFCATEGORY = 15
+
+CLUSTER_START = 5
+CLUSTER_END = 101
+CLUSTER_STEP = 5
 
 # Function used to read data
 def dataRead():
@@ -31,7 +33,7 @@ def dataRead():
     img_names = [os.listdir(train_path + d) for d in img_dirs if not d.startswith('.')]
 
     # Read all the images, and record their directories
-    for d_idx in range(NUMOFCATEGORY):
+    for d_idx in range(len(img_dirs)):
         for name in img_names[d_idx]:
             if not name.startswith('.'):
                 img = cv2.imread(train_path + img_dirs[d_idx] + '/' + name, 0)
@@ -48,7 +50,7 @@ def dataRead():
     img_names = [os.listdir(test_path + d) for d in img_dirs if not d.startswith('.')]
 
     # Read all the images, and record their directories
-    for d_idx in range(NUMOFCATEGORY):
+    for d_idx in range(len(img_dirs)):
         for name in img_names[d_idx]:
             if not name.startswith('.'):
                 img = cv2.imread(test_path + img_dirs[d_idx] + '/' + name, 0)
@@ -164,34 +166,94 @@ class NearestNeighbor(object):
 # Read in all data
 img_dirs, train_img_list, test_img_list = dataRead()
 
-# Find descriptors and cluster. Returned in np array form
-train_hist, test_hist = bagOfSIFT(k, train_img_list, test_img_list)
+L1_performance = []
+L2_performance = []
+fig_labels = []
+cluster_numbers = []
 
-# Create lable dictionary
-label_dict = {}
-for idx, label in enumerate(img_dirs):
-     label_dict[idx] = label
+# Generate the list of clustering
+for k in range(CLUSTER_START, CLUSTER_END, CLUSTER_STEP):
+    cluster_numbers.append(k)
 
-# Create Y results
-train_Y = np.repeat(np.arange(NUMOFCATEGORY), 100)
-test_Y = np.repeat(np.arange(NUMOFCATEGORY), 10)
+# Train with different k
+for k in cluster_numbers:
 
-nn = NearestNeighbor()
-nn.train(train_hist, train_Y)
-Yte_predict_L1 = nn.predict(test_hist, 'L1')
-L1_accuracy = np.mean(Yte_predict_L1 == test_Y)
-print('Bag of SIFT, NN with L1 norm: %f' % L1_accuracy)
-Yte_predict_L2 = nn.predict(test_hist, 'L2')
-L2_accuracy = np.mean(Yte_predict_L2 == test_Y)
-print('Bag of SIFT, NN with L2 norm: %f' % L2_accuracy)
+    # Find descriptors and cluster. Returned in np array form
+    train_hist, test_hist = bagOfSIFT(k, train_img_list, test_img_list)
 
-# Confusion matrix
-con_mat_L1 = confusion_matrix(test_Y, Yte_predict_L1)
-con_mat_L2 = confusion_matrix(test_Y, Yte_predict_L2)
+    # Create lable dictionary
+    label_dict = {}
+    for idx, label in enumerate(img_dirs):
+         label_dict[idx] = label
 
-# Plot non-normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(con_mat_L1, classes=img_dirs, title='Confusion matrix KNN + NN')
-plt.savefig('./task_2_out/confustion_mat_knn.png', bbox_inches='tight', dpi=300)
-plt.close()
+    # Create Y results
+    train_Y = np.repeat(np.arange(15), 100)
+    test_Y = np.repeat(np.arange(15), 10)
+
+    nn = NearestNeighbor()
+    nn.train(train_hist, train_Y)
+    Yte_predict_L1 = nn.predict(test_hist, 'L1')
+    L1_accuracy = np.mean(Yte_predict_L1 == test_Y)
+    print('Bag of SIFT, NN with L1 norm: %f' % L1_accuracy)
+    Yte_predict_L2 = nn.predict(test_hist, 'L2')
+    L2_accuracy = np.mean(Yte_predict_L2 == test_Y)
+    print('Bag of SIFT, NN with L2 norm: %f' % L2_accuracy)
+
+    L1_performance.append(L1_accuracy)
+    L2_performance.append(L2_accuracy)
+    fig_labels.append(('K = ' + str(k)))
+
+    # Confusion matrix
+    con_mat_L1 = confusion_matrix(test_Y, Yte_predict_L1)
+    con_mat_L2 = confusion_matrix(test_Y, Yte_predict_L2)
+
+    # Plot non-normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(con_mat_L1, classes=img_dirs, title='Confusion matrix KNN + NN')
+    plt.savefig('./task_2_out/confustion_mat_knn_' + str(k) + '.png', bbox_inches='tight', dpi=300)
+    plt.close()
+
+# Draw the performance figure
+
+# First generate the index
+bar_idx = np.arange(1, (len(cluster_numbers) + 1))
+
+# Create subplot to display multiple bars
+L1_fig, L1_axes = plt.subplots()
+plt.bar(bar_idx, L1_performance)
+
+# Set x labels
+L1_axes.set_xlabel("K values")
+L1_axes.set_xticks(bar_idx)
+L1_axes.set_xticklabels(fig_labels, rotation = 45)
+
+# Set y label
+L1_axes.set_ylabel('Accuracy')
+L1_axes.set_ybound([0, 0.7])
+
+# Set title
+L1_axes.set_title('L1 Performance')
+
+# Save image
+plt.savefig('./task_2_out/L1_performance.png', bbox_inches='tight', dpi=300)
+
+# Create subplot to display multiple bars
+L2_fig, L2_axes = plt.subplots()
+plt.bar(bar_idx, L2_performance)
+
+# Set x labels
+L2_axes.set_xlabel("K values")
+L2_axes.set_xticks(bar_idx)
+L2_axes.set_xticklabels(fig_labels, rotation = 45)
+
+# Set y label
+L2_axes.set_ylabel('Accuracy')
+L2_axes.set_ybound([0, 0.7])
+
+# Set title
+L2_axes.set_title('L2 Performance')
+
+# Save image
+plt.savefig('./task_2_out/L2_performance.png', bbox_inches='tight', dpi=300)
+
 
