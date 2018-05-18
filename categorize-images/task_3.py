@@ -16,7 +16,7 @@ import cv2, os
 import matplotlib.pyplot as plt
 import scipy.cluster.vq
 
-CLUSTERNUMBER = 10
+CLUSTERNUMBER = 80
 
 # Function used to read data
 def dataRead():
@@ -148,39 +148,7 @@ test_Y = np.repeat(np.arange(15), 10)
 
 #---------------------------------------------#
 
-# SVM (svm.SVC, kernel='linear')
-# from sklearn import svm
-# svc_model = svm.SVC(C=1000, kernel='linear')
-# svc_model.fit(train_hist, train_Y)
-# predicted = svc_model.predict(test_hist)
-
-# from sklearn.metrics import accuracy_score
-# print("SVM accuracy(c=1000): %r" % accuracy_score(predicted, test_Y))
-
-'''
-# c=1
-Number of training images: 300
-Number of testing images: 30
-SVM accuracy(c=1): 0.36666666666666664
-
-# c=10
-Number of training images: 300
-Number of testing images: 30
-SVM accuracy(c=10): 0.4666666666666667
-
-# c=100
-Number of training images: 300
-Number of testing images: 30
-SVM accuracy(c=100): 0.36666666666666664
-
-# c=1000
-Number of training images: 300
-Number of testing images: 30
-SVM accuracy(c=1000): 0.6333333333333333
-'''
-
-
-# SVM2 (normalize & LinearSVC)
+# SVM
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
@@ -189,31 +157,14 @@ pipe_lrSVC = Pipeline([('scaler', StandardScaler()), ('clf', LinearSVC(C=100))])
 pipe_lrSVC.fit(train_hist, train_Y)
 predicted = pipe_lrSVC.predict(test_hist)
 from sklearn.metrics import accuracy_score
-print("SVM accuracy(c=100): %r" % accuracy_score(predicted, test_Y))
+print("SVM accuracy(c=1): %r" % accuracy_score(predicted, test_Y))
 
-'''
-# c=1
-Number of training images: 1500
-Number of testing images: 150
-SVM accuracy(c=1): 0.16
+# Plot confusion matrix
+from plot_confusion_matrix import plot_confusion_matrix
+from sklearn.metrics import confusion_matrix
 
-# c=10
-Number of training images: 1500
-Number of testing images: 150
-SVM accuracy(c=10): 0.06
+con_mat_SVM = confusion_matrix(test_Y, predicted)
 
-# c=100
-Number of training images: 1500
-Number of testing images: 150
-SVM accuracy(c=100): 0.12
-
-# c=1000
-Number of training images: 1500
-Number of testing images: 150
-SVM accuracy(c=1000): 0.05333333333333334
-
-# c=10000
-Number of training images: 1500
-Number of testing images: 150
-SVM accuracy(c=10000): 0.08
-'''
+plot_confusion_matrix(con_mat_SVM, classes=img_dirs, title='SVM')
+plt.savefig('./task_3_out/confustion_mat_SVM_k80_c1.png', bbox_inches='tight', dpi=300)
+plt.close()
