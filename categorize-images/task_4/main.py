@@ -24,8 +24,8 @@ from utils import *
 import torchvision.datasets as dset
 
 import csv 
-train_writer = csv.writer(open("./train-out.csv", 'w'))
-test_writer = csv.writer(open("./test-out.csv", 'w'))
+train_writer = csv.writer(open("./eval-train-out.csv", 'w'))
+test_writer = csv.writer(open("./eval-test-out.csv", 'w'))
 # 1. Loading images and preprocessing (center crop, resize, normalizing, padding zero, random flip)
 my_transforms = transforms.Compose([transforms.Grayscale(),
                                     # transforms.Pad(4, fill=0),
@@ -35,13 +35,13 @@ my_transforms = transforms.Compose([transforms.Grayscale(),
                                     transforms.Pad(1, fill=0),
                                     transforms.RandomHorizontalFlip(),
                                     transforms.ToTensor(),
-                                    transformcs.Normalize((0.5,), (0.5,))])
+                                    transforms.Normalize((0.5,), (0.5,))])
 print('====> Loading Data ')
 train_dataset = dset.ImageFolder(root='../hw4_data/train',
                              transform=my_transforms)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
 print(train_loader)
-test_dataset = dset.ImageFolder(root='../hw4_data/test',
+test_dataset = dset.ImageFolder(root='../set3/',
                             transform=my_transforms)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
