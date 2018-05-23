@@ -35,7 +35,7 @@ my_transforms = transforms.Compose([transforms.Grayscale(),
                                     transforms.Pad(1, fill=0),
                                     transforms.RandomHorizontalFlip(),
                                     transforms.ToTensor(),
-                                    transforms.Normalize((0.5,), (0.5,))])
+                                    transformcs.Normalize((0.5,), (0.5,))])
 print('====> Loading Data ')
 train_dataset = dset.ImageFolder(root='../hw4_data/train',
                              transform=my_transforms)
