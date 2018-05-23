@@ -41,7 +41,7 @@ def dataRead():
     print("Number of training images: %d " % len(train_img_list))
 
     # Path to test data
-    test_path = "./hw4_data/test/"
+    test_path = "./set3/"
     test_img_list = []
 
     # Read all the file names in folders, one folder by one folder
@@ -144,7 +144,7 @@ for idx, label in enumerate(img_dirs):
 
 # Create Y results
 train_Y = np.repeat(np.arange(15), 100)
-test_Y = np.repeat(np.arange(15), 10)
+test_Y = np.repeat(np.arange(15), 5)
 
 #---------------------------------------------#
 

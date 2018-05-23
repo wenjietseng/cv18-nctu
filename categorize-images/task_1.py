@@ -81,7 +81,8 @@ for d_idx in range(len(img_names)):
 
 print("Number of training images: %d " % len(train_img_list))
 
-test_path = "./hw4_data/test/"
+# test_path = "./hw4_data/test/"
+test_path = "./set3/"
 test_img_list = []
 img_names = [os.listdir(test_path + d) for d in img_dirs if not d.startswith('.')]
 
@@ -119,7 +120,7 @@ for i, c in enumerate(img_dirs):
     label_dict[i] = c
 
 Ytr = np.repeat(np.arange(15), 100)
-Yte = np.repeat(np.arange(15), 10)
+Yte = np.repeat(np.arange(15), 5)
 
 # --- NN --- 
 nn = NearestNeighbor()
